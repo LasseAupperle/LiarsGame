@@ -1,0 +1,68 @@
+<!-- PWA Icons Placeholder -->
+<!--
+  To generate actual app icons:
+
+  1. Create a base logo (512x512 PNG minimum)
+  2. Use an online tool to generate multiple sizes:
+     - https://www.pwabuilder.com/imageGenerator
+     - https://realfavicongenerator.net/
+
+  3. Or use ImageMagick (if installed):
+     chmod +x generate-icons.sh
+     ./generate-icons.sh your-logo.png
+
+  Required icon files:
+  - public/icons/icon-192.png (192x192)
+  - public/icons/icon-512.png (512x512)
+  - public/icons/icon-192-maskable.png (192x192 with transparency)
+  - public/icons/icon-512-maskable.png (512x512 with transparency)
+
+  The manifest.json already references these files.
+-->
+
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Liars Game - Icon Generator</title>
+  <style>
+    body { font-family: Arial, sans-serif; padding: 20px; background: #f5f5f5; }
+    .container { max-width: 800px; margin: 0 auto; background: white; padding: 20px; border-radius: 8px; }
+    h1 { color: #667eea; }
+    .status { padding: 15px; background: #fffbea; border-left: 4px solid #f39c12; border-radius: 4px; }
+    .status.success { background: #f0f8f4; border-left-color: #2ecc71; }
+    code { background: #f0f0f0; padding: 2px 6px; border-radius: 3px; font-family: monospace; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🎨 Liars Game - PWA Icon Setup</h1>
+
+    <div class="status">
+      <strong>⚠️ Placeholder Icons</strong><br>
+      The app currently uses placeholder icons. Replace them with your game artwork.
+    </div>
+
+    <h2>Quick Setup (Online)</h2>
+    <ol>
+      <li>Visit: <a href="https://www.pwabuilder.com/imageGenerator" target="_blank">PWA Builder Image Generator</a></li>
+      <li>Upload your logo/icon (512x512 or larger)</li>
+      <li>Download the generated icons</li>
+      <li>Extract to <code>frontend/public/icons/</code></li>
+    </ol>
+
+    <h2>Manual Setup (Command Line)</h2>
+    <p>If you have ImageMagick installed:</p>
+    <pre><code>cd frontend
+chmod +x generate-icons.sh
+./generate-icons.sh path/to/your-logo.png</code></pre>
+
+    <h2>Required Files</h2>
+    <ul>
+      <li><code>public/icons/icon-192.png</code></li>
+      <li><code>public/icons/icon-512.png</code></li>
+      <li><code>public/icons/icon-192-maskable.png</code></li>
+      <li><code>public/icons/icon-512-maskable.png</code></li>
+    </ul>
+  </div>
+</body>
+</html>
