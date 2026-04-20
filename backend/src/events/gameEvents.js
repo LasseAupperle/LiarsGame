@@ -3,7 +3,12 @@
  */
 
 const sessionStore = require('../store/sessionStore');
+const lobbyStore = require('../store/lobbyStore');
 const logger = require('../utils/logger');
+
+const cb = (callback, data) => {
+  if (typeof callback === 'function') callback(data);
+};
 
 async function emitPrivateHands(io, lobbyCode, gameEngine) {
   const sockets = await io.in(lobbyCode).fetchSockets();
@@ -21,38 +26,36 @@ module.exports = (io) => {
       try {
         const { playerId } = socket.data;
         if (!playerId) {
-          callback({ success: false, message: 'Not authenticated' });
+          cb(callback, { success: false, message: 'Not authenticated' });
           return;
         }
 
         const gameEngine = sessionStore.getSession(lobbyCode);
         if (!gameEngine) {
-          callback({ success: false, message: 'Game session not found' });
+          cb(callback, { success: false, message: 'Game session not found' });
           return;
         }
 
         const result = gameEngine.playTurn(playerId, cardsIndices);
         if (!result.success) {
-          callback(result);
+          cb(callback, result);
           return;
         }
 
-        // Auto-advance turn after play
         gameEngine.nextTurn();
 
         const gameState = gameEngine.getGameState();
         io.to(lobbyCode).emit('game:state', gameState);
 
-        // Send updated hand to the player who just played
         const player = gameEngine.players.find(p => p.id === playerId);
         if (player) {
           socket.emit('game:hand', player.hand);
         }
 
-        callback({ success: true, gameState });
+        cb(callback, { success: true, gameState });
       } catch (error) {
         logger.error('Error playing turn', error);
-        callback({ success: false, message: 'Server error' });
+        cb(callback, { success: false, message: 'Server error' });
       }
     });
 
@@ -60,25 +63,24 @@ module.exports = (io) => {
       try {
         const { playerId } = socket.data;
         if (!playerId) {
-          callback({ success: false, message: 'Not authenticated' });
+          cb(callback, { success: false, message: 'Not authenticated' });
           return;
         }
 
         const gameEngine = sessionStore.getSession(lobbyCode);
         if (!gameEngine) {
-          callback({ success: false, message: 'Game session not found' });
+          cb(callback, { success: false, message: 'Game session not found' });
           return;
         }
 
         const result = gameEngine.callLiar(playerId);
         if (!result.success) {
-          callback(result);
+          cb(callback, result);
           return;
         }
 
-        const { truthful, isLiarCorrect, cardsPlayed, scoreDeltas } = result.result;
+        const { truthful, isLiarCorrect, cardsPlayed } = result.result;
 
-        // Emit liar resolution to all players
         io.to(lobbyCode).emit('game:liar:revealed', {
           truthful,
           isLiarCorrect,
@@ -89,7 +91,6 @@ module.exports = (io) => {
           }))
         });
 
-        // Check for victory
         const winner = gameEngine.isVictoryConditionMet();
         if (winner) {
           io.to(lobbyCode).emit('game:won', {
@@ -98,20 +99,20 @@ module.exports = (io) => {
             finalScore: winner.mainScore
           });
           sessionStore.deleteSession(lobbyCode);
-          callback({ success: true });
+          lobbyStore.deleteLobby(lobbyCode);
+          cb(callback, { success: true });
           return;
         }
 
-        // Start new round
         gameEngine.startRound();
         const gameState = gameEngine.getGameState();
         io.to(lobbyCode).emit('game:state', gameState);
         await emitPrivateHands(io, lobbyCode, gameEngine);
 
-        callback({ success: true, gameState });
+        cb(callback, { success: true, gameState });
       } catch (error) {
         logger.error('Error calling liar', error);
-        callback({ success: false, message: 'Server error' });
+        cb(callback, { success: false, message: 'Server error' });
       }
     });
 
@@ -119,7 +120,7 @@ module.exports = (io) => {
       try {
         const gameEngine = sessionStore.getSession(lobbyCode);
         if (!gameEngine) {
-          callback({ success: false, message: 'Game session not found' });
+          cb(callback, { success: false, message: 'Game session not found' });
           return;
         }
 
@@ -132,10 +133,10 @@ module.exports = (io) => {
         });
 
         io.to(lobbyCode).emit('game:state', gameState);
-        callback({ success: true, gameState });
+        cb(callback, { success: true, gameState });
       } catch (error) {
         logger.error('Error advancing turn', error);
-        callback({ success: false, message: 'Server error' });
+        cb(callback, { success: false, message: 'Server error' });
       }
     });
   });

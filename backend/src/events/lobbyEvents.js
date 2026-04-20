@@ -10,6 +10,10 @@ const GameEngine = require('../game/GameEngine');
 const Player = require('../game/Player');
 const logger = require('../utils/logger');
 
+const cb = (callback, data) => {
+  if (typeof callback === 'function') callback(data);
+};
+
 async function emitPrivateHands(io, lobbyCode, gameEngine) {
   const sockets = await io.in(lobbyCode).fetchSockets();
   for (const s of sockets) {
@@ -31,7 +35,7 @@ module.exports = (io) => {
 
         const result = lobbyStore.createLobby(lobbyCode, playerName, playerId);
         if (!result.success) {
-          callback({ success: false, message: result.message });
+          cb(callback, { success: false, message: result.message });
           return;
         }
 
@@ -46,7 +50,7 @@ module.exports = (io) => {
           players: lobby.players
         });
 
-        callback({
+        cb(callback, {
           success: true,
           lobbyCode,
           playerId,
@@ -54,7 +58,7 @@ module.exports = (io) => {
         });
       } catch (error) {
         logger.error('Error creating lobby', error);
-        callback({ success: false, message: 'Server error' });
+        cb(callback, { success: false, message: 'Server error' });
       }
     });
 
@@ -64,7 +68,7 @@ module.exports = (io) => {
         const result = lobbyStore.joinLobby(lobbyCode.toUpperCase(), playerName, playerId);
 
         if (!result.success) {
-          callback({ success: false, message: result.message });
+          cb(callback, { success: false, message: result.message });
           return;
         }
 
@@ -79,7 +83,7 @@ module.exports = (io) => {
           players: lobby.players
         });
 
-        callback({
+        cb(callback, {
           success: true,
           lobbyCode,
           playerId,
@@ -87,7 +91,7 @@ module.exports = (io) => {
         });
       } catch (error) {
         logger.error('Error joining lobby', error);
-        callback({ success: false, message: 'Server error' });
+        cb(callback, { success: false, message: 'Server error' });
       }
     });
 
@@ -95,12 +99,14 @@ module.exports = (io) => {
       try {
         const { lobbyCode, playerId } = socket.data;
         if (!lobbyCode) {
-          callback({ success: false, message: 'Not in a lobby' });
+          cb(callback, { success: false, message: 'Not in a lobby' });
           return;
         }
 
         lobbyStore.leaveLobby(lobbyCode, playerId);
         socket.leave(lobbyCode);
+        socket.data.lobbyCode = null;
+        socket.data.playerId = null;
 
         const lobby = lobbyStore.getLobby(lobbyCode);
         if (lobby) {
@@ -110,10 +116,10 @@ module.exports = (io) => {
           });
         }
 
-        callback({ success: true });
+        cb(callback, { success: true });
       } catch (error) {
         logger.error('Error leaving lobby', error);
-        callback({ success: false, message: 'Server error' });
+        cb(callback, { success: false, message: 'Server error' });
       }
     });
 
@@ -121,33 +127,32 @@ module.exports = (io) => {
       try {
         const { lobbyCode, playerId } = socket.data;
         if (!lobbyCode) {
-          callback({ success: false, message: 'Not in a lobby' });
+          cb(callback, { success: false, message: 'Not in a lobby' });
           return;
         }
 
         const lobby = lobbyStore.getLobby(lobbyCode);
         if (!lobby) {
-          callback({ success: false, message: 'Lobby not found' });
+          cb(callback, { success: false, message: 'Lobby not found' });
           return;
         }
 
         if (lobby.host !== playerId) {
-          callback({ success: false, message: 'Only host can start game' });
+          cb(callback, { success: false, message: 'Only host can start game' });
           return;
         }
 
         const startResult = lobbyStore.startGame(lobbyCode);
         if (!startResult.success) {
-          callback({ success: false, message: startResult.message });
+          cb(callback, { success: false, message: startResult.message });
           return;
         }
 
-        // Create game engine and start first round
         const players = lobby.players.map(p => new Player(p.id, p.name));
         const gameEngine = new GameEngine(players);
         const sessionResult = sessionStore.createSession(lobbyCode, gameEngine);
         if (!sessionResult.success) {
-          callback({ success: false, message: sessionResult.message });
+          cb(callback, { success: false, message: sessionResult.message });
           return;
         }
 
@@ -158,10 +163,20 @@ module.exports = (io) => {
 
         await emitPrivateHands(io, lobbyCode, gameEngine);
 
-        callback({ success: true });
+        cb(callback, { success: true });
       } catch (error) {
         logger.error('Error starting game', error);
-        callback({ success: false, message: 'Server error' });
+        cb(callback, { success: false, message: 'Server error' });
+      }
+    });
+
+    socket.on('lobby:list', (callback) => {
+      try {
+        const lobbies = lobbyStore.getPublicLobbies();
+        cb(callback, { success: true, lobbies });
+      } catch (error) {
+        logger.error('Error listing lobbies', error);
+        cb(callback, { success: false, lobbies: [] });
       }
     });
 

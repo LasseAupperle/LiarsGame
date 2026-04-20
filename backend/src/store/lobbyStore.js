@@ -68,6 +68,14 @@ class LobbyStore {
     return { success: true };
   }
 
+  deleteLobby(lobbyCode) {
+    if (this.lobbies[lobbyCode]) {
+      delete this.lobbies[lobbyCode];
+      logger.log(`Lobby force-deleted: ${lobbyCode}`);
+    }
+    return { success: true };
+  }
+
   startGame(lobbyCode) {
     const lobby = this.lobbies[lobbyCode];
     if (!lobby) {
@@ -85,6 +93,16 @@ class LobbyStore {
 
   getLobby(lobbyCode) {
     return this.lobbies[lobbyCode] || null;
+  }
+
+  getPublicLobbies() {
+    return Object.values(this.lobbies)
+      .filter(l => l.status === 'waiting' && l.players.length < 4)
+      .map(l => ({
+        code: l.code,
+        playerCount: l.players.length,
+        maxPlayers: 4
+      }));
   }
 
   getAllLobbies() {

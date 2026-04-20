@@ -5,7 +5,7 @@
 import { useState } from 'react';
 import useGame from '../../hooks/useGame';
 
-export default function LobbyCreate() {
+export default function LobbyCreate({ onBack }) {
   const [playerName, setPlayerName] = useState('');
   const [loading, setLoading] = useState(false);
   const { emit, setPlayerId, setPlayerName: setGamePlayerName, setGameCode, setStatus } = useGame();
@@ -30,6 +30,7 @@ export default function LobbyCreate() {
 
   return (
     <div className="lobby-create">
+      <button className="btn-back" onClick={onBack}>← Back</button>
       <h2>Create New Game</h2>
       <form onSubmit={handleCreateLobby}>
         <input

@@ -5,8 +5,8 @@
 import { useState } from 'react';
 import useGame from '../../hooks/useGame';
 
-export default function LobbyJoin() {
-  const [lobbyCode, setLobbyCode] = useState('');
+export default function LobbyJoin({ onBack, initialCode = '' }) {
+  const [lobbyCode, setLobbyCode] = useState(initialCode);
   const [playerName, setPlayerName] = useState('');
   const [loading, setLoading] = useState(false);
   const { emit, setPlayerId, setPlayerName: setGamePlayerName, setGameCode, setStatus } = useGame();
@@ -31,6 +31,7 @@ export default function LobbyJoin() {
 
   return (
     <div className="lobby-join">
+      <button className="btn-back" onClick={onBack}>← Back</button>
       <h2>Join Game</h2>
       <form onSubmit={handleJoinLobby}>
         <input

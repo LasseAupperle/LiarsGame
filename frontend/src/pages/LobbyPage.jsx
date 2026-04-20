@@ -1,21 +1,32 @@
 /**
- * LobbyPage.jsx - Choose between creating or joining a lobby
+ * LobbyPage.jsx - Choose between creating, joining, or browsing lobbies
  */
 
 import { useState } from 'react';
 import LobbyCreate from '../components/Lobby/LobbyCreate';
 import LobbyJoin from '../components/Lobby/LobbyJoin';
+import LobbyBrowse from '../components/Lobby/LobbyBrowse';
 import LobbyRoom from '../components/Lobby/LobbyRoom';
 import useGame from '../hooks/useGame';
 
 export default function LobbyPage() {
-  const [mode, setMode] = useState(null); // create | join | waiting
+  const [mode, setMode] = useState(null); // null | create | join | browse
+  const [prefilledCode, setPrefilledCode] = useState('');
   const { gameCode } = useGame();
 
-  // If in a lobby with code, show the room
   if (gameCode) {
     return <LobbyRoom />;
   }
+
+  const handleJoinWithCode = (code) => {
+    setPrefilledCode(code);
+    setMode('join');
+  };
+
+  const handleBack = () => {
+    setMode(null);
+    setPrefilledCode('');
+  };
 
   return (
     <div className="lobby-page">
@@ -31,11 +42,17 @@ export default function LobbyPage() {
             <button className="btn-primary" onClick={() => setMode('join')}>
               Join Game
             </button>
+            <button className="btn-secondary" onClick={() => setMode('browse')}>
+              Browse Games
+            </button>
           </div>
         )}
 
-        {mode === 'create' && <LobbyCreate />}
-        {mode === 'join' && <LobbyJoin />}
+        {mode === 'create' && <LobbyCreate onBack={handleBack} />}
+        {mode === 'join' && <LobbyJoin onBack={handleBack} initialCode={prefilledCode} />}
+        {mode === 'browse' && (
+          <LobbyBrowse onBack={handleBack} onJoinWithCode={handleJoinWithCode} />
+        )}
       </div>
     </div>
   );
