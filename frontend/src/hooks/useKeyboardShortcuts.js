@@ -70,7 +70,7 @@ const useKeyboardShortcuts = () => {
 
       // R: Ready for next round (if applicable)
       if (e.key === 'r' || e.key === 'R') {
-        emit('game:nextTurn', (response) => {
+        emit('game:nextTurn', gameCode, (response) => {
           if (!response.success) {
             alert('Error: ' + response.message);
           }

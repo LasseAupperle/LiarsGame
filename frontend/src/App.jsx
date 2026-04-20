@@ -1,12 +1,12 @@
-import { useEffect, useState } from 'react';
 import useGame from './hooks/useGame';
 import ErrorBoundary from './components/ErrorBoundary';
 import LobbyPage from './pages/LobbyPage';
 import GamePage from './pages/GamePage';
+import GameWon from './components/Game/GameWon';
 import './AppStyles.css';
 
 function App() {
-  const { status, connected, setPlayerId, setPlayerName } = useGame();
+  const { status, connected, winner } = useGame();
 
   if (!connected) {
     return (
@@ -24,15 +24,12 @@ function App() {
       <>
         {status === 'lobby' && <LobbyPage />}
         {(status === 'playing' || status === 'spectating') && <GamePage />}
-        {status === 'won' && (
-          <div className="lobby-page">
-            <div className="lobby-container">
-              <h1 className="page-title">Game Over!</h1>
-              <button className="btn-primary" onClick={() => window.location.href = '/'}>
-                Play Again
-              </button>
-            </div>
-          </div>
+        {status === 'won' && winner && (
+          <GameWon
+            winnerId={winner.winnerId}
+            winnerName={winner.winnerName}
+            finalScore={winner.finalScore}
+          />
         )}
       </>
     </ErrorBoundary>

@@ -5,7 +5,20 @@
 const { v4: uuidv4 } = require('uuid');
 const generateLobbyCode = require('../utils/generateLobbyCode');
 const lobbyStore = require('../store/lobbyStore');
+const sessionStore = require('../store/sessionStore');
+const GameEngine = require('../game/GameEngine');
+const Player = require('../game/Player');
 const logger = require('../utils/logger');
+
+async function emitPrivateHands(io, lobbyCode, gameEngine) {
+  const sockets = await io.in(lobbyCode).fetchSockets();
+  for (const s of sockets) {
+    const player = gameEngine.players.find(p => p.id === s.data.playerId);
+    if (player) {
+      s.emit('game:hand', player.hand);
+    }
+  }
+}
 
 module.exports = (io) => {
   io.on('connection', (socket) => {
@@ -104,7 +117,7 @@ module.exports = (io) => {
       }
     });
 
-    socket.on('lobby:start', (callback) => {
+    socket.on('lobby:start', async (callback) => {
       try {
         const { lobbyCode, playerId } = socket.data;
         if (!lobbyCode) {
@@ -129,10 +142,21 @@ module.exports = (io) => {
           return;
         }
 
-        io.to(lobbyCode).emit('game:started', {
-          lobbyCode,
-          players: startResult.players
-        });
+        // Create game engine and start first round
+        const players = lobby.players.map(p => new Player(p.id, p.name));
+        const gameEngine = new GameEngine(players);
+        const sessionResult = sessionStore.createSession(lobbyCode, gameEngine);
+        if (!sessionResult.success) {
+          callback({ success: false, message: sessionResult.message });
+          return;
+        }
+
+        gameEngine.startRound();
+        const gameState = gameEngine.getGameState();
+
+        io.to(lobbyCode).emit('game:started', { lobbyCode, gameState });
+
+        await emitPrivateHands(io, lobbyCode, gameEngine);
 
         callback({ success: true });
       } catch (error) {

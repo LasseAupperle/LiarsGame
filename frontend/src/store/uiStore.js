@@ -2,7 +2,7 @@
  * uiStore.js - Zustand store for UI state
  */
 
-import create from 'zustand';
+import { create } from 'zustand';
 
 const useUIStore = create((set) => ({
   // UI state

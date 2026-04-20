@@ -2,7 +2,7 @@
  * socketStore.js - Zustand store for Socket.IO connection state
  */
 
-import create from 'zustand';
+import { create } from 'zustand';
 import io from 'socket.io-client';
 
 const useSocketStore = create((set, get) => ({
@@ -45,10 +45,10 @@ const useSocketStore = create((set, get) => ({
     }
   },
 
-  emit: (event, data) => {
+  emit: (event, ...args) => {
     const { socket } = get();
     if (socket && get().connected) {
-      socket.emit(event, data);
+      socket.emit(event, ...args);
     }
   },
 

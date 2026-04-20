@@ -5,9 +5,10 @@
 import useGame from '../../hooks/useGame';
 
 export default function ScoreBoard() {
-  const { players, playerId, bonusModifier, roundNumber } = useGame();
+  const { players, playerId, roundNumber } = useGame();
 
   const yourPlayer = players.find((p) => p.id === playerId);
+  const bonusModifier = yourPlayer?.bonusModifier ?? 0;
 
   return (
     <div className="scoreboard">

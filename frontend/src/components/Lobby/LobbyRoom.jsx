@@ -11,6 +11,9 @@ export default function LobbyRoom() {
     playerId,
     players,
     setPlayers,
+    setStatus,
+    acceptGameState,
+    setMyHand,
     emit,
     on,
     off,
@@ -30,18 +33,25 @@ export default function LobbyRoom() {
 
     const handleGameStart = (data) => {
       if (data.lobbyCode === gameCode) {
-        // Game will start, transition handled by parent
+        acceptGameState(data.gameState);
+        setStatus('playing');
       }
+    };
+
+    const handleHand = (hand) => {
+      setMyHand(hand);
     };
 
     on('lobby:updated', handleLobbyUpdate);
     on('game:started', handleGameStart);
+    on('game:hand', handleHand);
 
     return () => {
       off('lobby:updated', handleLobbyUpdate);
       off('game:started', handleGameStart);
+      off('game:hand', handleHand);
     };
-  }, [connected, gameCode, setPlayers, on, off]);
+  }, [connected, gameCode, setPlayers, setStatus, acceptGameState, setMyHand, on, off]);
 
   useEffect(() => {
     // Can start if you're the first player and there are 2-4 players

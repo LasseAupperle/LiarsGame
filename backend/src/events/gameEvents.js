@@ -2,14 +2,22 @@
  * gameEvents.js - Socket.IO in-game event handlers
  */
 
-const GameEngine = require('../game/GameEngine');
-const Player = require('../game/Player');
 const sessionStore = require('../store/sessionStore');
 const logger = require('../utils/logger');
 
+async function emitPrivateHands(io, lobbyCode, gameEngine) {
+  const sockets = await io.in(lobbyCode).fetchSockets();
+  for (const s of sockets) {
+    const player = gameEngine.players.find(p => p.id === s.data.playerId);
+    if (player) {
+      s.emit('game:hand', player.hand);
+    }
+  }
+}
+
 module.exports = (io) => {
   io.on('connection', (socket) => {
-    socket.on('game:play', (lobbyCode, cardsIndices, callback) => {
+    socket.on('game:play', async (lobbyCode, cardsIndices, callback) => {
       try {
         const { playerId } = socket.data;
         if (!playerId) {
@@ -29,8 +37,17 @@ module.exports = (io) => {
           return;
         }
 
+        // Auto-advance turn after play
+        gameEngine.nextTurn();
+
         const gameState = gameEngine.getGameState();
         io.to(lobbyCode).emit('game:state', gameState);
+
+        // Send updated hand to the player who just played
+        const player = gameEngine.players.find(p => p.id === playerId);
+        if (player) {
+          socket.emit('game:hand', player.hand);
+        }
 
         callback({ success: true, gameState });
       } catch (error) {
@@ -39,7 +56,7 @@ module.exports = (io) => {
       }
     });
 
-    socket.on('game:callLiar', (lobbyCode, callback) => {
+    socket.on('game:callLiar', async (lobbyCode, callback) => {
       try {
         const { playerId } = socket.data;
         if (!playerId) {
@@ -69,8 +86,7 @@ module.exports = (io) => {
           scores: gameEngine.getGameState().players.map(p => ({
             id: p.id,
             mainScore: p.mainScore
-          })),
-          bonusModifier: gameEngine.players[0].bonusModifier // Assuming shared bonus
+          }))
         });
 
         // Check for victory
@@ -81,11 +97,16 @@ module.exports = (io) => {
             winnerName: winner.name,
             finalScore: winner.mainScore
           });
+          sessionStore.deleteSession(lobbyCode);
+          callback({ success: true });
           return;
         }
 
+        // Start new round
+        gameEngine.startRound();
         const gameState = gameEngine.getGameState();
         io.to(lobbyCode).emit('game:state', gameState);
+        await emitPrivateHands(io, lobbyCode, gameEngine);
 
         callback({ success: true, gameState });
       } catch (error) {
@@ -107,7 +128,7 @@ module.exports = (io) => {
 
         io.to(lobbyCode).emit('game:turn', {
           currentPlayerId: gameState.currentPlayerId,
-          timeLimit: 30 // 30 seconds per turn
+          timeLimit: 30
         });
 
         io.to(lobbyCode).emit('game:state', gameState);

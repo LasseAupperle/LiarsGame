@@ -2,7 +2,7 @@
  * gameStore.js - Zustand store for game state
  */
 
-import create from 'zustand';
+import { create } from 'zustand';
 
 const useGameStore = create((set) => ({
   // Game state
@@ -24,6 +24,12 @@ const useGameStore = create((set) => ({
   // History
   history: [],
 
+  // My private hand
+  myHand: [],
+
+  // Winner data
+  winner: null,
+
   // Actions
   setGameCode: (code) => set({ gameCode: code }),
   setPlayerId: (id) => set({ playerId: id }),
@@ -35,6 +41,8 @@ const useGameStore = create((set) => ({
   setRoundNumber: (num) => set({ roundNumber: num }),
   setBonusModifier: (mod) => set({ bonusModifier: mod }),
   setTurnOrder: (order) => set({ turnOrder: order }),
+  setMyHand: (hand) => set({ myHand: hand }),
+  setWinner: (winner) => set({ winner }),
 
   acceptGameState: (gameData) =>
     set({
@@ -42,7 +50,8 @@ const useGameStore = create((set) => ({
       currentPlayerId: gameData.currentPlayerId,
       players: gameData.players,
       roundNumber: gameData.roundNumber,
-      turnOrder: gameData.turnOrder
+      turnOrder: gameData.turnOrder,
+      history: gameData.playHistory || []
     }),
 
   addToHistory: (entry) =>
@@ -64,7 +73,9 @@ const useGameStore = create((set) => ({
       turnOrder: [],
       bonusModifier: 0,
       roundNumber: 0,
-      history: []
+      history: [],
+      myHand: [],
+      winner: null
     })
 }));
 

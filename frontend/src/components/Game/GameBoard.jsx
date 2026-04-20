@@ -18,51 +18,52 @@ import CardVisibilityToggle from './CardVisibilityToggle';
 export default function GameBoard() {
   const {
     gameCode,
-    playerId,
     players,
-    currentPlayerId,
-    history,
+    myHand,
     on,
     off,
-    setCurrentPlayerId,
-    clearSelection,
-    setStatus
+    acceptGameState,
+    setMyHand,
+    setWinner,
+    setStatus,
+    clearSelection
   } = useGame();
 
-  // Enable keyboard shortcuts on PC
   useKeyboardShortcuts();
-
-  // Enable touch gestures on mobile
   useTouchGestures();
-
-  const yourHand = players.find(p => p.id === playerId)?.hand || [];
 
   useEffect(() => {
     if (!gameCode) return;
 
     const handleGameState = (data) => {
-      setCurrentPlayerId(data.currentPlayerId);
+      acceptGameState(data);
+    };
+
+    const handleHand = (hand) => {
+      setMyHand(hand);
     };
 
     const handleGameWon = (data) => {
+      setWinner(data);
       setStatus('won');
-      alert(`${data.winnerName} won with ${data.finalScore} points!`);
     };
 
-    const handleGameLiarRevealed = () => {
+    const handleLiarRevealed = () => {
       clearSelection();
     };
 
     on('game:state', handleGameState);
+    on('game:hand', handleHand);
     on('game:won', handleGameWon);
-    on('game:liar:revealed', handleGameLiarRevealed);
+    on('game:liar:revealed', handleLiarRevealed);
 
     return () => {
       off('game:state', handleGameState);
+      off('game:hand', handleHand);
       off('game:won', handleGameWon);
-      off('game:liar:revealed', handleGameLiarRevealed);
+      off('game:liar:revealed', handleLiarRevealed);
     };
-  }, [gameCode, setCurrentPlayerId, setStatus, clearSelection, on, off]);
+  }, [gameCode, acceptGameState, setMyHand, setWinner, setStatus, clearSelection, on, off]);
 
   return (
     <div className="game-board">
@@ -90,7 +91,7 @@ export default function GameBoard() {
         <div className="card-controls">
           <CardVisibilityToggle />
         </div>
-        <PlayerHand hand={yourHand} />
+        <PlayerHand hand={myHand} />
         <ActionButtons />
       </div>
     </div>
