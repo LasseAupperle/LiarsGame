@@ -1,17 +1,13 @@
-/**
- * CardVisibilityToggle.jsx - Button to hide/show own cards
- */
-
-import { useState } from 'react';
+import useGame from '../../hooks/useGame';
 import useHapticFeedback from '../../hooks/useHapticFeedback';
 
 export default function CardVisibilityToggle() {
-  const [cardsHidden, setCardsHidden] = useState(false);
+  const { cardsHidden, toggleCardsHidden } = useGame();
   const { tap } = useHapticFeedback();
 
   const handleToggle = () => {
     tap();
-    setCardsHidden(!cardsHidden);
+    toggleCardsHidden();
   };
 
   return (

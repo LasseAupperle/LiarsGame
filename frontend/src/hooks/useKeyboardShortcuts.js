@@ -18,12 +18,11 @@ const useKeyboardShortcuts = () => {
     isYourTurn,
     emit,
     gameCode,
-    playerId,
-    players
+    myHand,
+    toggleSound,
+    toggleCardsHidden
   } = useGame();
   const { playSound } = useSound();
-
-  const yourHand = players.find(p => p.id === playerId)?.hand || [];
 
   useEffect(() => {
     const handleKeyPress = (e) => {
@@ -38,7 +37,7 @@ const useKeyboardShortcuts = () => {
       // Number keys 1-9: Select card by position
       if (e.key >= '1' && e.key <= '9') {
         const cardIndex = parseInt(e.key) - 1;
-        if (cardIndex < yourHand.length) {
+        if (cardIndex < myHand.length) {
           toggleCard(cardIndex);
           e.preventDefault();
         }
@@ -87,9 +86,15 @@ const useKeyboardShortcuts = () => {
         e.preventDefault();
       }
 
+      // H: Hide/show cards
+      if (e.key === 'h' || e.key === 'H') {
+        toggleCardsHidden();
+        e.preventDefault();
+      }
+
       // S: Toggle sound
       if (e.key === 's' || e.key === 'S') {
-        // Toggle sound via useGame store
+        toggleSound();
         e.preventDefault();
       }
     };
@@ -103,10 +108,10 @@ const useKeyboardShortcuts = () => {
     isYourTurn,
     emit,
     gameCode,
-    playerId,
-    players,
-    playSound,
-    yourHand.length
+    myHand,
+    toggleSound,
+    toggleCardsHidden,
+    playSound
   ]);
 };
 

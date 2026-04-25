@@ -158,6 +158,19 @@ class GameEngine {
   }
 
   /**
+   * Remove a player mid-game (disconnect timeout)
+   * @param {string} playerId
+   */
+  removePlayer(playerId) {
+    const player = this.players.find(p => p.id === playerId);
+    if (player) player.spectator = true;
+    this.turnOrder = this.turnOrder.filter(id => id !== playerId);
+    if (this.currentPlayerIndex >= this.turnOrder.length) {
+      this.currentPlayerIndex = 0;
+    }
+  }
+
+  /**
    * Advance to next player's turn
    */
   nextTurn() {

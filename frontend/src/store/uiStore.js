@@ -9,8 +9,10 @@ const useUIStore = create((set) => ({
   selectedCards: [],
   showModal: null, // play-confirm | liar-confirm | card-select | error
   soundEnabled: true,
+  cardsHidden: false,
   showRules: false,
   error: null,
+  disconnectedPlayers: [], // [{ playerId, playerName }]
 
   // Actions
   toggleCard: (cardId) =>
@@ -29,6 +31,16 @@ const useUIStore = create((set) => ({
 
   toggleSound: () => set((state) => ({ soundEnabled: !state.soundEnabled })),
 
+  toggleCardsHidden: () => set((state) => ({ cardsHidden: !state.cardsHidden })),
+
+  addDisconnectedPlayer: (player) =>
+    set((state) => ({ disconnectedPlayers: [...state.disconnectedPlayers, player] })),
+
+  removeDisconnectedPlayer: (playerId) =>
+    set((state) => ({
+      disconnectedPlayers: state.disconnectedPlayers.filter(p => p.playerId !== playerId)
+    })),
+
   setShowRules: (show) => set({ showRules: show }),
 
   setError: (error) => set({ error }),
@@ -40,8 +52,10 @@ const useUIStore = create((set) => ({
       selectedCards: [],
       showModal: null,
       soundEnabled: true,
+      cardsHidden: false,
       showRules: false,
-      error: null
+      error: null,
+      disconnectedPlayers: []
     })
 }));
 

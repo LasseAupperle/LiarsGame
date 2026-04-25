@@ -14,6 +14,9 @@ const cb = (callback, data) => {
   if (typeof callback === 'function') callback(data);
 };
 
+// playerId → setTimeout handle for in-game disconnect grace period
+const disconnectTimers = {};
+
 async function emitPrivateHands(io, lobbyCode, gameEngine) {
   const sockets = await io.in(lobbyCode).fetchSockets();
   for (const s of sockets) {
@@ -180,16 +183,80 @@ module.exports = (io) => {
       }
     });
 
+    socket.on('game:rejoin', (lobbyCode, playerId, callback) => {
+      try {
+        const timer = disconnectTimers[playerId];
+        if (!timer) {
+          cb(callback, { success: false, message: 'Rejoin window expired' });
+          return;
+        }
+
+        clearTimeout(timer);
+        delete disconnectTimers[playerId];
+
+        socket.join(lobbyCode);
+        socket.data.lobbyCode = lobbyCode;
+        socket.data.playerId = playerId;
+
+        const gameEngine = sessionStore.getSession(lobbyCode);
+        if (!gameEngine) {
+          cb(callback, { success: false, message: 'Game no longer active' });
+          return;
+        }
+
+        const gameState = gameEngine.getGameState();
+        socket.emit('game:state', gameState);
+
+        const player = gameEngine.players.find(p => p.id === playerId);
+        if (player) socket.emit('game:hand', player.hand);
+
+        io.to(lobbyCode).emit('player:reconnected', { playerId });
+        cb(callback, { success: true, gameState });
+      } catch (error) {
+        logger.error('Error rejoining game', error);
+        cb(callback, { success: false, message: 'Server error' });
+      }
+    });
+
     socket.on('disconnect', () => {
-      const { lobbyCode, playerId } = socket.data;
+      const { lobbyCode, playerId, playerName } = socket.data;
       if (lobbyCode && playerId) {
-        lobbyStore.leaveLobby(lobbyCode, playerId);
-        const lobby = lobbyStore.getLobby(lobbyCode);
-        if (lobby) {
-          io.to(lobbyCode).emit('lobby:updated', {
-            lobbyCode,
-            players: lobby.players
-          });
+        const gameEngine = sessionStore.getSession(lobbyCode);
+        if (gameEngine) {
+          // In active game — start 30s grace period
+          io.to(lobbyCode).emit('player:disconnected', { playerId, playerName, timeoutMs: 30000 });
+          disconnectTimers[playerId] = setTimeout(() => {
+            delete disconnectTimers[playerId];
+            gameEngine.removePlayer(playerId);
+            const gameState = gameEngine.getGameState();
+            io.to(lobbyCode).emit('game:state', gameState);
+            io.to(lobbyCode).emit('player:left', { playerId, playerName });
+
+            // If only 1 or 0 active players remain, end the game
+            const remaining = gameState.turnOrder;
+            if (remaining.length <= 1) {
+              const winner = gameEngine.players.find(p => p.id === remaining[0]);
+              if (winner) {
+                io.to(lobbyCode).emit('game:won', {
+                  winnerId: winner.id,
+                  winnerName: winner.name,
+                  finalScore: winner.mainScore
+                });
+              }
+              sessionStore.deleteSession(lobbyCode);
+              lobbyStore.deleteLobby(lobbyCode);
+            }
+          }, 30000);
+        } else {
+          // In lobby — remove immediately
+          lobbyStore.leaveLobby(lobbyCode, playerId);
+          const lobby = lobbyStore.getLobby(lobbyCode);
+          if (lobby) {
+            io.to(lobbyCode).emit('lobby:updated', {
+              lobbyCode,
+              players: lobby.players
+            });
+          }
         }
       }
       logger.log(`User disconnected: ${socket.id}`);

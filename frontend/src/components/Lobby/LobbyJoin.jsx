@@ -9,7 +9,7 @@ export default function LobbyJoin({ onBack, initialCode = '' }) {
   const [lobbyCode, setLobbyCode] = useState(initialCode);
   const [playerName, setPlayerName] = useState('');
   const [loading, setLoading] = useState(false);
-  const { emit, setPlayerId, setPlayerName: setGamePlayerName, setGameCode, setStatus } = useGame();
+  const { emit, setPlayerId, setPlayerName: setGamePlayerName, setGameCode, setStatus, setPlayers } = useGame();
 
   const handleJoinLobby = (e) => {
     e.preventDefault();
@@ -21,6 +21,7 @@ export default function LobbyJoin({ onBack, initialCode = '' }) {
       if (response.success) {
         setGamePlayerName(playerName);
         setPlayerId(response.playerId);
+        setPlayers(response.players);
         setGameCode(response.lobbyCode);
         setStatus('lobby');
       } else {

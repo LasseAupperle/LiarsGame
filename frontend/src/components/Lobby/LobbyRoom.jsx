@@ -1,9 +1,15 @@
-/**
- * LobbyRoom.jsx - Waiting room showing players and start button
- */
-
 import { useEffect, useState } from 'react';
 import useGame from '../../hooks/useGame';
+
+const AVATAR_COLORS = ['#6c5ce7', '#00b894', '#e17055', '#0984e3', '#fd79a8', '#fdcb6e'];
+
+function getAvatarColor(name) {
+  return AVATAR_COLORS[name.charCodeAt(0) % AVATAR_COLORS.length];
+}
+
+function getInitials(name) {
+  return name.charAt(0).toUpperCase();
+}
 
 export default function LobbyRoom() {
   const {
@@ -21,6 +27,7 @@ export default function LobbyRoom() {
   } = useGame();
 
   const [canStart, setCanStart] = useState(false);
+  const [copied, setCopied] = useState(false);
 
   useEffect(() => {
     if (!connected) return;
@@ -54,7 +61,6 @@ export default function LobbyRoom() {
   }, [connected, gameCode, setPlayers, setStatus, acceptGameState, setMyHand, on, off]);
 
   useEffect(() => {
-    // Can start if you're the first player and there are 2-4 players
     const isHost = players.length > 0 && players[0].id === playerId;
     setCanStart(isHost && players.length >= 2 && players.length <= 4);
   }, [players, playerId]);
@@ -75,30 +81,63 @@ export default function LobbyRoom() {
     });
   };
 
+  const handleCopyCode = () => {
+    navigator.clipboard.writeText(gameCode).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    });
+  };
+
+  const isHost = players.length > 0 && players[0].id === playerId;
+
   return (
     <div className="lobby-room">
-      <h2>Lobby: {gameCode}</h2>
-      <p className="code-display">Share this code with friends: <strong>{gameCode}</strong></p>
-
-      <div className="players-list">
-        <h3>Players ({players.length}/4)</h3>
-        <ul>
-          {players.map((player) => (
-            <li key={player.id}>
-              {player.name}
-              {player.id === playerId && ' (You)'}
-            </li>
-          ))}
-        </ul>
+      <div className="lobby-code-section">
+        <p className="lobby-code-label">Game Code</p>
+        <button className="lobby-code-block" onClick={handleCopyCode} title="Click to copy">
+          {gameCode}
+        </button>
+        <p className="lobby-code-hint">{copied ? 'Copied!' : 'Tap to copy'}</p>
       </div>
 
-      <div className="actions">
+      <div className="lobby-players-section">
+        <h3>Players ({players.length}/4)</h3>
+        <div className="lobby-avatars">
+          {players.map((player, index) => (
+            <div key={player.id} className="player-avatar-wrap">
+              {index === 0 && <span className="host-crown">👑</span>}
+              <div
+                className="player-avatar"
+                style={{ backgroundColor: getAvatarColor(player.name) }}
+              >
+                {getInitials(player.name)}
+              </div>
+              <span className="avatar-name">
+                {player.name}
+                {player.id === playerId && ' (You)'}
+              </span>
+            </div>
+          ))}
+          {Array.from({ length: 4 - players.length }).map((_, i) => (
+            <div key={`empty-${i}`} className="player-avatar-wrap">
+              <div className="player-avatar player-avatar-empty">+</div>
+              <span className="avatar-name">Waiting...</span>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div className="lobby-status">
+        {players.length < 2 && <p className="waiting-text">Need at least 2 players to start</p>}
+        {players.length >= 2 && !isHost && <p className="waiting-text">Waiting for host to start...</p>}
+      </div>
+
+      <div className="lobby-actions">
         {canStart && (
           <button className="btn-primary" onClick={handleStartGame}>
             Start Game
           </button>
         )}
-        {!canStart && <p>Waiting for host to start...</p>}
         <button className="btn-secondary" onClick={handleLeaveLobby}>
           Leave Lobby
         </button>

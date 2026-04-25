@@ -4,6 +4,7 @@
 
 import { create } from 'zustand';
 import io from 'socket.io-client';
+import useGameStore from './gameStore';
 
 const useSocketStore = create((set, get) => ({
   socket: null,
@@ -21,6 +22,16 @@ const useSocketStore = create((set, get) => ({
     socket.on('connect', () => {
       set({ connected: true, error: null });
       console.log('Socket connected:', socket.id);
+
+      // Auto-rejoin in-game session after reconnect
+      const { status, gameCode, playerId, acceptGameState } = useGameStore.getState();
+      if (status === 'playing' && gameCode && playerId) {
+        socket.emit('game:rejoin', gameCode, playerId, (res) => {
+          if (res?.success) {
+            acceptGameState(res.gameState);
+          }
+        });
+      }
     });
 
     socket.on('disconnect', () => {
