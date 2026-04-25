@@ -1,39 +1,52 @@
-/**
- * LobbyBrowse.jsx - Browse and join open lobbies
- */
-
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import useGame from '../../hooks/useGame';
 
 export default function LobbyBrowse({ onBack, onJoinWithCode }) {
   const [lobbies, setLobbies] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const { emit } = useGame();
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const { emit, connected } = useGame();
+  const timeoutRef = useRef(null);
 
   const fetchLobbies = () => {
+    if (timeoutRef.current) clearTimeout(timeoutRef.current);
     setLoading(true);
+    setError(null);
+
+    // 5-second timeout if callback never fires
+    timeoutRef.current = setTimeout(() => {
+      setLoading(false);
+      setError('Could not reach server. Check connection.');
+    }, 5000);
+
     emit('lobby:list', (response) => {
+      clearTimeout(timeoutRef.current);
       setLoading(false);
       if (response?.success) {
-        setLobbies(response.lobbies);
+        setLobbies(response.lobbies || []);
+      } else {
+        setError('Failed to load lobbies.');
       }
     });
   };
 
   useEffect(() => {
-    fetchLobbies();
-  }, []);
+    if (connected) fetchLobbies();
+    return () => { if (timeoutRef.current) clearTimeout(timeoutRef.current); };
+  }, [connected]);
 
   return (
     <div className="lobby-browse">
       <button className="btn-back" onClick={onBack}>← Back</button>
       <h2>Open Lobbies</h2>
 
-      <button className="btn-refresh" onClick={fetchLobbies} disabled={loading}>
+      <button className="btn-refresh" onClick={fetchLobbies} disabled={loading || !connected}>
         {loading ? 'Loading...' : '↻ Refresh'}
       </button>
 
-      {!loading && lobbies.length === 0 && (
+      {error && <p className="no-lobbies" style={{ color: 'var(--red)' }}>{error}</p>}
+
+      {!loading && !error && lobbies.length === 0 && (
         <p className="no-lobbies">No open lobbies. Create one!</p>
       )}
 

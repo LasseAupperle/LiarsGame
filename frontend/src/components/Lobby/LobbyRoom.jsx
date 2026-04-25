@@ -39,7 +39,7 @@ export default function LobbyRoom() {
     };
 
     const handleGameStart = (data) => {
-      if (data.lobbyCode === gameCode) {
+      if (data.gameState) {
         acceptGameState(data.gameState);
         setStatus('playing');
       }
