@@ -67,7 +67,10 @@ export default function LobbyRoom() {
 
   const handleStartGame = () => {
     emit('lobby:start', (response) => {
-      if (!response.success) {
+      if (response.success && response.gameState) {
+        acceptGameState(response.gameState);
+        setStatus('playing');
+      } else if (!response.success) {
         alert('Error starting game: ' + response.message);
       }
     });

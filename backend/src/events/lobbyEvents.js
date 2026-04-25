@@ -166,7 +166,7 @@ module.exports = (io) => {
 
         await emitPrivateHands(io, lobbyCode, gameEngine);
 
-        cb(callback, { success: true });
+        cb(callback, { success: true, gameState });
       } catch (error) {
         logger.error('Error starting game', error);
         cb(callback, { success: false, message: 'Server error' });
