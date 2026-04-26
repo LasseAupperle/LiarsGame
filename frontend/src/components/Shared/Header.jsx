@@ -7,7 +7,7 @@ import SoundToggle from './SoundToggle';
 import KeyboardShortcutsHelp from './KeyboardShortcutsHelp';
 
 export default function Header() {
-  const { gameCode, playerName } = useGame();
+  const { gameCode, playerName, isYourTurn, currentPlayerId, players } = useGame();
 
   const copyToClipboard = () => {
     if (gameCode) {
@@ -15,6 +15,13 @@ export default function Header() {
       alert('Lobby code copied!');
     }
   };
+
+  const currentPlayer = players?.find(p => p.id === currentPlayerId);
+  const turnLabel = isYourTurn
+    ? 'Your turn'
+    : currentPlayer
+      ? `${currentPlayer.name}'s turn`
+      : '';
 
   return (
     <div className="header">
@@ -24,6 +31,11 @@ export default function Header() {
       </div>
 
       <div className="header-center">
+        {turnLabel && (
+          <div className={`turn-indicator ${isYourTurn ? 'your-turn' : 'other-turn'}`}>
+            {turnLabel}
+          </div>
+        )}
         {gameCode && (
           <div className="code-display" onClick={copyToClipboard} title="Click to copy">
             Code: <strong>{gameCode}</strong>

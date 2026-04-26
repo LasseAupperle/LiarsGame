@@ -1,32 +1,34 @@
-/**
- * PlayerPanel.jsx - Display other players' status
- */
-
 import useGame from '../../hooks/useGame';
 
 export default function PlayerPanel() {
-  const { players, playerId, currentPlayerId } = useGame();
+  const { players, playerId, currentPlayerId, roundNumber } = useGame();
 
-  const otherPlayers = players.filter((p) => p.id !== playerId);
+  const sorted = [...players].sort((a, b) => b.mainScore - a.mainScore);
 
   return (
     <div className="player-panel">
-      <h3>Other Players</h3>
-      <div className="players-grid">
-        {otherPlayers.map((player) => (
-          <div
-            key={player.id}
-            className={`player-card ${player.id === currentPlayerId ? 'active-turn' : ''} ${
-              player.spectator ? 'spectator' : ''
-            }`}
-          >
-            <div className="player-name">{player.name}</div>
-            <div className="player-score">{player.mainScore} pts</div>
-            <div className="player-cards">{player.cardsLeft} 🎴</div>
-            {player.spectator && <div className="badge">Spectator</div>}
-            {player.id === currentPlayerId && <div className="badge active">Turn</div>}
-          </div>
-        ))}
+      <div className="leaderboard">
+        <div className="leaderboard-header">
+          <span>Leaderboard</span>
+          <span className="round-badge">Round {roundNumber}</span>
+        </div>
+        <div className="leaderboard-list">
+          {sorted.map((player, i) => (
+            <div
+              key={player.id}
+              className={`leaderboard-row ${player.id === currentPlayerId ? 'active-turn' : ''} ${player.id === playerId ? 'self' : ''} ${player.spectator ? 'spectator' : ''}`}
+            >
+              <span className="lb-rank">#{i + 1}</span>
+              <span className="lb-name">
+                {player.name}
+                {player.id === playerId && ' (You)'}
+                {player.id === currentPlayerId && ' 🎯'}
+              </span>
+              <span className="lb-cards">{player.cardsLeft} 🎴</span>
+              <span className="lb-score">{player.mainScore} pts</span>
+            </div>
+          ))}
+        </div>
       </div>
     </div>
   );

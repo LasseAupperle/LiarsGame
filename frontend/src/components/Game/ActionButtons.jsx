@@ -9,9 +9,12 @@ export default function ActionButtons({ onPlay, onLiar }) {
   const {
     isYourTurn,
     selectedCards,
+    clearSelection,
     emit,
     gameCode,
-    playerId
+    history,
+    players,
+    currentPlayerId
   } = useGame();
   const { playSound } = useSound();
 
@@ -24,6 +27,7 @@ export default function ActionButtons({ onPlay, onLiar }) {
     playSound('card-place');
     emit('game:play', gameCode, selectedCards, (response) => {
       if (response.success) {
+        clearSelection();
         onPlay?.(response);
       } else {
         alert('Error: ' + response.message);
@@ -43,14 +47,16 @@ export default function ActionButtons({ onPlay, onLiar }) {
   };
 
   if (!isYourTurn) {
+    const currentPlayer = players.find(p => p.id === currentPlayerId);
+    const waitingFor = currentPlayer?.name || 'someone';
     return (
       <div className="action-buttons">
-        <button className="btn-danger" onClick={handleCallLiar}>
-          Call Liar
-        </button>
+        <p className="waiting-text">Waiting for {waitingFor}...</p>
       </div>
     );
   }
+
+  const canCallLiar = history.length > 0;
 
   return (
     <div className="action-buttons">
@@ -61,6 +67,11 @@ export default function ActionButtons({ onPlay, onLiar }) {
       >
         Play {selectedCards.length > 0 ? selectedCards.length : ''} Cards
       </button>
+      {canCallLiar && (
+        <button className="btn-danger" onClick={handleCallLiar}>
+          Call Liar
+        </button>
+      )}
     </div>
   );
 }

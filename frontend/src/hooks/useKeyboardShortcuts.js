@@ -20,7 +20,8 @@ const useKeyboardShortcuts = () => {
     gameCode,
     myHand,
     toggleSound,
-    toggleCardsHidden
+    toggleCardsHidden,
+    history
   } = useGame();
   const { playSound } = useSound();
 
@@ -56,8 +57,8 @@ const useKeyboardShortcuts = () => {
         e.preventDefault();
       }
 
-      // L: Call Liar
-      if ((e.key === 'l' || e.key === 'L') && !isYourTurn) {
+      // L: Call Liar (only when it's your turn AND there's a previous play)
+      if ((e.key === 'l' || e.key === 'L') && isYourTurn && history.length > 0) {
         playSound('liar-call');
         emit('game:callLiar', gameCode, (response) => {
           if (!response.success) {
@@ -111,6 +112,7 @@ const useKeyboardShortcuts = () => {
     myHand,
     toggleSound,
     toggleCardsHidden,
+    history,
     playSound
   ]);
 };

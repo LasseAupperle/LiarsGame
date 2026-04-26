@@ -11,6 +11,7 @@ import PlayerHand from './PlayerHand';
 import ActionButtons from './ActionButtons';
 import CardVisibilityToggle from './CardVisibilityToggle';
 import DisconnectBanner from './DisconnectBanner';
+import RulesModal from './RulesModal';
 
 export default function GameBoard() {
   const {
@@ -34,7 +35,7 @@ export default function GameBoard() {
     if (!gameCode) return;
 
     const handleGameState = (data) => acceptGameState(data);
-    const handleHand = (hand) => setMyHand(hand);
+    const handleHand = (hand) => { setMyHand(hand); clearSelection(); };
     const handleGameWon = (data) => { setWinner(data); setStatus('won'); };
     const handleLiarRevealed = () => clearSelection();
     const handlePlayerDisconnected = (data) => addDisconnectedPlayer(data);
@@ -73,7 +74,10 @@ export default function GameBoard() {
       </div>
 
       <div className="bottom-panel">
-        <CardVisibilityToggle />
+        <div className="bottom-controls">
+          <CardVisibilityToggle />
+          <RulesModal />
+        </div>
         <PlayerHand hand={myHand} />
         <ActionButtons />
       </div>
