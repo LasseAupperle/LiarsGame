@@ -42,15 +42,44 @@ module.exports = (io) => {
           return;
         }
 
-        gameEngine.nextTurn();
-
-        const gameState = gameEngine.getGameState();
-        io.to(lobbyCode).emit('game:state', gameState);
-
+        // Emit updated hand to the player who just played
         const player = gameEngine.players.find(p => p.id === playerId);
         if (player) {
           socket.emit('game:hand', player.hand);
         }
+
+        // Check if all active players have empty hands — no liar call round end
+        const activePlayers = gameEngine.players.filter(p => !p.spectator);
+        const allHandsEmpty = activePlayers.every(p => p.hand.length === 0);
+
+        if (allHandsEmpty) {
+          gameEngine.resolveNoLiarCall();
+
+          const winner = gameEngine.isVictoryConditionMet();
+          if (winner) {
+            io.to(lobbyCode).emit('game:won', {
+              winnerId: winner.id,
+              winnerName: winner.name,
+              finalScore: winner.mainScore
+            });
+            sessionStore.deleteSession(lobbyCode);
+            lobbyStore.deleteLobby(lobbyCode);
+            cb(callback, { success: true });
+            return;
+          }
+
+          gameEngine.startRound();
+          const newRoundState = gameEngine.getGameState();
+          io.to(lobbyCode).emit('game:state', newRoundState);
+          await emitPrivateHands(io, lobbyCode, gameEngine);
+          cb(callback, { success: true, gameState: newRoundState });
+          return;
+        }
+
+        gameEngine.nextTurn();
+
+        const gameState = gameEngine.getGameState();
+        io.to(lobbyCode).emit('game:state', gameState);
 
         cb(callback, { success: true, gameState });
       } catch (error) {

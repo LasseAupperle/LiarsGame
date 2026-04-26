@@ -100,47 +100,52 @@ class GameEngine {
   }
 
   /**
-   * Call liar on the current player
+   * Call liar on the player who made the last play.
+   * currentPlayerIndex is already advanced to the caller after nextTurn(),
+   * so we identify the accused from playHistory — not from currentPlayerIndex.
    * @param {string} callerId - ID of player calling liar
    * @returns {{ success: boolean, message: string, result?: object }}
    */
   callLiar(callerId) {
-    if (callerId === this.turnOrder[this.currentPlayerIndex]) {
+    const lastPlay = this.playHistory[this.playHistory.length - 1];
+    if (!lastPlay) {
+      return { success: false, message: 'No play to call liar on' };
+    }
+
+    const accusedId = lastPlay.playerId;
+
+    if (callerId === accusedId) {
       return { success: false, message: 'Cannot call liar on yourself' };
     }
 
-    const currentPlayerId = this.turnOrder[this.currentPlayerIndex];
-    const currentPlayer = this.players.find(p => p.id === currentPlayerId);
+    const accusedPlayer = this.players.find(p => p.id === accusedId);
     const caller = this.players.find(p => p.id === callerId);
 
-    if (!currentPlayer || !caller) {
+    if (!accusedPlayer || !caller) {
       return { success: false, message: 'Player not found' };
     }
 
-    const play = this.roundPlays[currentPlayerId];
+    const play = this.roundPlays[accusedId];
     if (!play) {
       return { success: false, message: 'No play to call liar on' };
     }
 
     const isLiarCorrect = !play.truthful;
-    const scoreChange = calculateScoreChange(isLiarCorrect, currentPlayer.bonusModifier);
+    const scoreChange = calculateScoreChange(isLiarCorrect, accusedPlayer.bonusModifier);
 
-    // Apply score changes
-    currentPlayer.updateScore(scoreChange.liarScore);
+    accusedPlayer.updateScore(scoreChange.liarScore);
     caller.updateScore(scoreChange.callerScore);
 
-    // Update bonus modifier
-    const newBonus = isLiarCorrect ? 0 : Math.max(0, currentPlayer.bonusModifier - 1);
-    currentPlayer.updateBonusModifier(newBonus - currentPlayer.bonusModifier);
+    const newBonus = isLiarCorrect ? 0 : Math.max(0, accusedPlayer.bonusModifier - 1);
+    accusedPlayer.updateBonusModifier(newBonus - accusedPlayer.bonusModifier);
 
-    // Other players also gain points
     this.players.forEach(p => {
-      if (p.id !== currentPlayerId && p.id !== callerId && !p.spectator) {
+      if (p.id !== accusedId && p.id !== callerId && !p.spectator) {
         p.updateScore(scoreChange.othersScore);
       }
     });
 
-    logger.log(`Liar call: ${isLiarCorrect ? 'CORRECT' : 'WRONG'}`);
+    logger.log(`Liar call by ${caller.name} on ${accusedPlayer.name}: ${isLiarCorrect ? 'CORRECT' : 'WRONG'}`);
 
     return {
       success: true,
@@ -150,11 +155,24 @@ class GameEngine {
         isLiarCorrect,
         cardsPlayed: play.cardsPlayed,
         scoreDeltas: {
-          [currentPlayerId]: scoreChange.liarScore,
+          [accusedId]: scoreChange.liarScore,
           [callerId]: scoreChange.callerScore
         }
       }
     };
+  }
+
+  /**
+   * Resolve a round where all players played out their cards with no liar call.
+   * All active players gain +1 point and +1 bonus modifier.
+   */
+  resolveNoLiarCall() {
+    const active = this.players.filter(p => !p.spectator);
+    active.forEach(p => {
+      p.updateScore(1);
+      p.updateBonusModifier(1);
+    });
+    logger.log('Round resolved: no liar call — all players +1 pt, bonus +1');
   }
 
   /**
@@ -171,10 +189,16 @@ class GameEngine {
   }
 
   /**
-   * Advance to next player's turn
+   * Advance to next player's turn, skipping players with empty hands.
+   * The "all hands empty" check in gameEvents.js prevents infinite loops here.
    */
   nextTurn() {
-    this.currentPlayerIndex = (this.currentPlayerIndex + 1) % this.turnOrder.length;
+    const total = this.turnOrder.length;
+    for (let i = 0; i < total; i++) {
+      this.currentPlayerIndex = (this.currentPlayerIndex + 1) % total;
+      const current = this.players.find(p => p.id === this.turnOrder[this.currentPlayerIndex]);
+      if (current && current.hand.length > 0) break;
+    }
   }
 
   /**
