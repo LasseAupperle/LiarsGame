@@ -17,6 +17,7 @@ const useUIStore = create((set) => ({
   tableDisplay: {
     count: 0,
     revealed: false,
+    noLiar: false,
     cards: null,
     accusedName: null,
     callerName: null,
@@ -58,7 +59,7 @@ const useUIStore = create((set) => ({
   clearTableDisplay: () =>
     set({
       tableDisplay: {
-        count: 0, revealed: false, cards: null,
+        count: 0, revealed: false, noLiar: false, cards: null,
         accusedName: null, callerName: null,
         isLiarCorrect: null, scoreDeltas: null, scores: null,
       }
@@ -80,7 +81,7 @@ const useUIStore = create((set) => ({
       error: null,
       disconnectedPlayers: [],
       tableDisplay: {
-        count: 0, revealed: false, cards: null,
+        count: 0, revealed: false, noLiar: false, cards: null,
         accusedName: null, callerName: null,
         isLiarCorrect: null, scoreDeltas: null, scores: null,
       }

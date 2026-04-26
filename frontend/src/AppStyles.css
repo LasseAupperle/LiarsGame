@@ -546,7 +546,7 @@ form {
 }
 
 .hand-card-img {
-  width: 62px;
+  width: clamp(56px, 14vw, 84px);
   height: auto;
   border-radius: 4px;
   display: block;
@@ -582,12 +582,12 @@ form {
 }
 
 .table-card-banner-img {
-  height: 44px;
+  height: 72px;
   width: auto;
-  border-radius: 4px;
-  margin-left: 8px;
+  border-radius: 5px;
+  margin-left: 10px;
   vertical-align: middle;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+  box-shadow: 0 3px 8px rgba(0,0,0,0.4);
 }
 
 /* Table center — face-down and revealed cards */
@@ -603,6 +603,8 @@ form {
   font-size: 0.95rem;
   color: var(--text-on-dark-muted);
   margin: 0;
+  text-align: center;
+  width: 100%;
 }
 
 .table-cards-row {
@@ -613,8 +615,8 @@ form {
 
 /* 3D card flip */
 .card-flip {
-  width: 72px;
-  height: 100px;
+  width: clamp(72px, 18vw, 100px);
+  height: clamp(100px, 25vw, 140px);
   perspective: 800px;
 }
 
@@ -673,6 +675,11 @@ form {
   border: 2px solid #00b894;
 }
 
+.no-liar-round {
+  background: rgba(108, 92, 231, 0.15);
+  border: 2px solid #6c5ce7;
+}
+
 .liar-result-headline {
   font-size: 1.15rem;
   font-weight: bold;
@@ -710,6 +717,13 @@ form {
   background: rgba(231, 76, 60, 0.1);
 }
 
+.next-player-hint {
+  margin: 8px 0 0;
+  font-size: 0.82rem;
+  color: var(--text-on-dark-muted);
+  font-style: italic;
+}
+
 /* Legacy — keep for backwards compat */
 .claim-info {
   display: flex;
@@ -737,9 +751,9 @@ form {
 /* Player Panel */
 .player-panel {
   background: var(--bg-game-panel);
-  border-radius: 12px;
-  padding: 15px;
-  margin-bottom: 20px;
+  border-radius: 10px;
+  padding: 8px 12px;
+  margin-bottom: 12px;
 }
 
 .players-grid {
@@ -1048,34 +1062,34 @@ form {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 8px;
+  margin-bottom: 5px;
   font-weight: 600;
-  font-size: 0.95rem;
+  font-size: 0.85rem;
   color: var(--text-on-dark);
 }
 
 .round-badge {
-  font-size: 0.8rem;
+  font-size: 0.75rem;
   color: var(--text-on-dark-muted);
   background: rgba(102, 126, 234, 0.15);
-  padding: 2px 8px;
-  border-radius: 12px;
+  padding: 1px 7px;
+  border-radius: 10px;
 }
 
 .leaderboard-list {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 3px;
 }
 
 .leaderboard-row {
   display: grid;
-  grid-template-columns: 28px 1fr auto auto;
+  grid-template-columns: 22px 1fr auto auto;
   align-items: center;
-  gap: 8px;
-  padding: 6px 10px;
-  border-radius: 6px;
-  font-size: 0.9rem;
+  gap: 6px;
+  padding: 4px 8px;
+  border-radius: 5px;
+  font-size: 0.82rem;
   background: rgba(102, 126, 234, 0.06);
   border: 1px solid transparent;
   transition: all 0.2s;

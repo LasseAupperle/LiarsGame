@@ -8,10 +8,9 @@ export default function KeyboardShortcutsHelp() {
   const [showHelp, setShowHelp] = useState(false);
 
   const shortcuts = [
-    { key: '1-9', action: 'Select card by position' },
+    { key: '1-5', action: 'Select card by position' },
     { key: 'Enter', action: 'Play selected cards' },
     { key: 'L', action: 'Call Liar' },
-    { key: 'R', action: 'Ready for next turn' },
     { key: 'C', action: 'Copy lobby code' },
     { key: 'S', action: 'Toggle sound' },
     { key: 'H', action: 'Hide/show cards' }

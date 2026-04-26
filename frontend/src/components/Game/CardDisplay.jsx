@@ -17,6 +17,8 @@ export default function CardDisplay() {
     tableDisplay,
     setTableDisplay,
     clearTableDisplay,
+    players,
+    currentPlayerId,
   } = useGame();
 
   const prevHistoryLenRef = useRef(0);
@@ -32,6 +34,7 @@ export default function CardDisplay() {
       setTableDisplay({
         count: last.cardsPlayed,
         revealed: false,
+        noLiar: false,
         cards: null,
         accusedName: null,
         callerName: null,
@@ -48,7 +51,8 @@ export default function CardDisplay() {
   }, [history.length]);
 
   const cardName = cardNames[winningCard] || '?';
-  const { count, revealed, cards, accusedName, callerName, isLiarCorrect, scoreDeltas, scores } = tableDisplay;
+  const { count, revealed, noLiar, cards, accusedName, callerName, isLiarCorrect, scoreDeltas, scores } = tableDisplay;
+  const nextPlayerName = players?.find(p => p.id === currentPlayerId)?.name;
 
   return (
     <div className="card-display">
@@ -97,7 +101,24 @@ export default function CardDisplay() {
             ))}
           </div>
 
-          {revealed && (
+          {revealed && noLiar && (
+            <div className="liar-result-banner no-liar-round">
+              <p className="liar-result-headline">✅ Round complete!</p>
+              <p className="liar-result-sub">No liar called — everyone gets +1</p>
+              <div className="score-deltas">
+                {scores?.map(p => (
+                  <span key={p.id} className="score-delta positive">
+                    {p.name} +1
+                  </span>
+                ))}
+              </div>
+              {nextPlayerName && (
+                <p className="next-player-hint">▶ {nextPlayerName} goes first next round</p>
+              )}
+            </div>
+          )}
+
+          {revealed && !noLiar && (
             <div className={`liar-result-banner ${isLiarCorrect ? 'liar-caught' : 'liar-wrong'}`}>
               <p className="liar-result-headline">
                 {accusedName} was {isLiarCorrect ? '🤥 BLUFFING!' : '✅ TRUTHFUL!'}
@@ -107,7 +128,7 @@ export default function CardDisplay() {
               </p>
               <div className="score-deltas">
                 {scores?.map(p => {
-                  const delta = scoreDeltas?.[p.id] ?? (isLiarCorrect ? 1 : 1);
+                  const delta = scoreDeltas?.[p.id] ?? 1;
                   return (
                     <span key={p.id} className={`score-delta ${delta >= 0 ? 'positive' : 'negative'}`}>
                       {p.name} {delta > 0 ? '+' : ''}{delta}
@@ -115,6 +136,9 @@ export default function CardDisplay() {
                   );
                 })}
               </div>
+              {nextPlayerName && (
+                <p className="next-player-hint">▶ {nextPlayerName} goes first next round</p>
+              )}
             </div>
           )}
         </div>

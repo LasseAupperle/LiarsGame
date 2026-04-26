@@ -1,4 +1,5 @@
 import useGame from '../../hooks/useGame';
+import useSound from '../../hooks/useSound';
 
 const CARD_IMAGES = {
   1: '/assets/cards/Ace.png',
@@ -11,6 +12,7 @@ const cardNames = { 1: 'Ace', 2: 'King', 3: 'Queen', 4: 'Joker' };
 
 export default function PlayerHand({ hand = [] }) {
   const { selectedCards, toggleCard, cardsHidden } = useGame();
+  const { playSound } = useSound();
 
   return (
     <div className="player-hand">
@@ -22,7 +24,7 @@ export default function PlayerHand({ hand = [] }) {
             <div
               key={index}
               className={`hand-card-wrap ${selected ? 'selected' : ''}`}
-              onClick={() => !cardsHidden && toggleCard(index)}
+              onClick={() => { if (!cardsHidden) { toggleCard(index); playSound('card-place'); } }}
             >
               <img
                 src={cardsHidden ? '/assets/cards/card_back.png' : CARD_IMAGES[card]}

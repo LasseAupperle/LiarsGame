@@ -55,6 +55,14 @@ module.exports = (io) => {
         if (allHandsEmpty) {
           gameEngine.resolveNoLiarCall();
 
+          const activePlayers = gameEngine.players.filter(p => !p.spectator);
+          const noLiarDeltas = {};
+          activePlayers.forEach(p => { noLiarDeltas[p.id] = 1; });
+          io.to(lobbyCode).emit('game:round:noLiar', {
+            scores: activePlayers.map(p => ({ id: p.id, name: p.name, mainScore: p.mainScore })),
+            scoreDeltas: noLiarDeltas,
+          });
+
           const winner = gameEngine.isVictoryConditionMet();
           if (winner) {
             io.to(lobbyCode).emit('game:won', {

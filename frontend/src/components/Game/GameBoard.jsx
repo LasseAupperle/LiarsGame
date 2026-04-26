@@ -43,10 +43,23 @@ export default function GameBoard() {
       clearSelection();
       setTableDisplay({
         revealed: true,
+        noLiar: false,
         cards: data.cardsPlayed,
         accusedName: data.accusedName,
         callerName: data.callerName,
         isLiarCorrect: data.isLiarCorrect,
+        scoreDeltas: data.scoreDeltas,
+        scores: data.scores,
+      });
+    };
+    const handleRoundNoLiar = (data) => {
+      setTableDisplay({
+        revealed: true,
+        noLiar: true,
+        cards: null,
+        accusedName: null,
+        callerName: null,
+        isLiarCorrect: null,
         scoreDeltas: data.scoreDeltas,
         scores: data.scores,
       });
@@ -59,6 +72,7 @@ export default function GameBoard() {
     on('game:hand', handleHand);
     on('game:won', handleGameWon);
     on('game:liar:revealed', handleLiarRevealed);
+    on('game:round:noLiar', handleRoundNoLiar);
     on('player:disconnected', handlePlayerDisconnected);
     on('player:reconnected', handlePlayerReconnected);
     on('player:left', handlePlayerLeft);
@@ -68,6 +82,7 @@ export default function GameBoard() {
       off('game:hand', handleHand);
       off('game:won', handleGameWon);
       off('game:liar:revealed', handleLiarRevealed);
+      off('game:round:noLiar', handleRoundNoLiar);
       off('player:disconnected', handlePlayerDisconnected);
       off('player:reconnected', handlePlayerReconnected);
       off('player:left', handlePlayerLeft);
