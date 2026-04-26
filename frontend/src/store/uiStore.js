@@ -14,6 +14,17 @@ const useUIStore = create((set) => ({
   error: null,
   disconnectedPlayers: [], // [{ playerId, playerName }]
 
+  tableDisplay: {
+    count: 0,
+    revealed: false,
+    cards: null,
+    accusedName: null,
+    callerName: null,
+    isLiarCorrect: null,
+    scoreDeltas: null,
+    scores: null,
+  },
+
   // Actions
   toggleCard: (cardId) =>
     set((state) => {
@@ -41,6 +52,18 @@ const useUIStore = create((set) => ({
       disconnectedPlayers: state.disconnectedPlayers.filter(p => p.playerId !== playerId)
     })),
 
+  setTableDisplay: (data) =>
+    set((state) => ({ tableDisplay: { ...state.tableDisplay, ...data } })),
+
+  clearTableDisplay: () =>
+    set({
+      tableDisplay: {
+        count: 0, revealed: false, cards: null,
+        accusedName: null, callerName: null,
+        isLiarCorrect: null, scoreDeltas: null, scores: null,
+      }
+    }),
+
   setShowRules: (show) => set({ showRules: show }),
 
   setError: (error) => set({ error }),
@@ -55,7 +78,12 @@ const useUIStore = create((set) => ({
       cardsHidden: false,
       showRules: false,
       error: null,
-      disconnectedPlayers: []
+      disconnectedPlayers: [],
+      tableDisplay: {
+        count: 0, revealed: false, cards: null,
+        accusedName: null, callerName: null,
+        isLiarCorrect: null, scoreDeltas: null, scores: null,
+      }
     })
 }));
 

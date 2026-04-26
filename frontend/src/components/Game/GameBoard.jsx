@@ -25,7 +25,9 @@ export default function GameBoard() {
     setStatus,
     clearSelection,
     addDisconnectedPlayer,
-    removeDisconnectedPlayer
+    removeDisconnectedPlayer,
+    setTableDisplay,
+    clearTableDisplay,
   } = useGame();
 
   useKeyboardShortcuts();
@@ -37,7 +39,18 @@ export default function GameBoard() {
     const handleGameState = (data) => acceptGameState(data);
     const handleHand = (hand) => { setMyHand(hand); clearSelection(); };
     const handleGameWon = (data) => { setWinner(data); setStatus('won'); };
-    const handleLiarRevealed = () => clearSelection();
+    const handleLiarRevealed = (data) => {
+      clearSelection();
+      setTableDisplay({
+        revealed: true,
+        cards: data.cardsPlayed,
+        accusedName: data.accusedName,
+        callerName: data.callerName,
+        isLiarCorrect: data.isLiarCorrect,
+        scoreDeltas: data.scoreDeltas,
+        scores: data.scores,
+      });
+    };
     const handlePlayerDisconnected = (data) => addDisconnectedPlayer(data);
     const handlePlayerReconnected = (data) => removeDisconnectedPlayer(data.playerId);
     const handlePlayerLeft = (data) => removeDisconnectedPlayer(data.playerId);
@@ -59,7 +72,7 @@ export default function GameBoard() {
       off('player:reconnected', handlePlayerReconnected);
       off('player:left', handlePlayerLeft);
     };
-  }, [gameCode, acceptGameState, setMyHand, setWinner, setStatus, clearSelection, addDisconnectedPlayer, removeDisconnectedPlayer, on, off]);
+  }, [gameCode, acceptGameState, setMyHand, setWinner, setStatus, clearSelection, addDisconnectedPlayer, removeDisconnectedPlayer, setTableDisplay, clearTableDisplay, on, off]);
 
   return (
     <div className="game-board">

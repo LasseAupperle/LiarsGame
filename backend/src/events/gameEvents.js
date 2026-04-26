@@ -108,16 +108,22 @@ module.exports = (io) => {
           return;
         }
 
-        const { truthful, isLiarCorrect, cardsPlayed } = result.result;
+        const { truthful, isLiarCorrect, cardsPlayed, scoreDeltas } = result.result;
+
+        const accusedId = Object.keys(scoreDeltas)[0];
+        const accusedPlayer = gameEngine.players.find(p => p.id === accusedId);
+        const callerPlayer = gameEngine.players.find(p => p.id === playerId);
 
         io.to(lobbyCode).emit('game:liar:revealed', {
           truthful,
           isLiarCorrect,
           cardsPlayed,
-          scores: gameEngine.getGameState().players.map(p => ({
-            id: p.id,
-            mainScore: p.mainScore
-          }))
+          accusedName: accusedPlayer?.name,
+          callerName: callerPlayer?.name,
+          scoreDeltas,
+          scores: gameEngine.players
+            .filter(p => !p.spectator)
+            .map(p => ({ id: p.id, name: p.name, mainScore: p.mainScore }))
         });
 
         const winner = gameEngine.isVictoryConditionMet();
