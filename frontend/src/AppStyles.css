@@ -821,9 +821,13 @@ form {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 20px;
+  padding: 12px 20px;
   background: rgba(0, 0, 0, 0.3);
   border-bottom: 2px solid #667eea;
+}
+
+.header-left {
+  flex-shrink: 0;
 }
 
 .header-left h1 {
@@ -842,17 +846,20 @@ form {
   flex: 1;
   display: flex;
   justify-content: center;
+  align-items: center;
+  gap: 8px;
 }
 
 .code-display {
   background: rgba(102, 126, 234, 0.2);
   border: 1px solid var(--accent);
   color: var(--text-on-dark);
-  padding: 10px 20px;
+  padding: 7px 16px;
   border-radius: 8px;
   cursor: pointer;
   transition: all 0.3s ease;
   user-select: none;
+  white-space: nowrap;
 }
 
 .code-display:hover {
@@ -862,7 +869,9 @@ form {
 
 .header-right {
   display: flex;
-  gap: 15px;
+  gap: 8px;
+  flex-shrink: 0;
+  align-items: center;
 }
 
 .sound-toggle {
@@ -1038,7 +1047,7 @@ form {
   font-weight: 600;
   padding: 4px 12px;
   border-radius: 20px;
-  margin-bottom: 4px;
+  white-space: nowrap;
 }
 
 .turn-indicator.your-turn {
@@ -1626,7 +1635,7 @@ form {
   }
 }
 
-/* Prevent horizontal scroll on mobile */
+/* Mobile layout */
 @media (max-width: 768px) {
   body, html, #root {
     overflow-x: hidden;
@@ -1635,6 +1644,120 @@ form {
 
   .game-board {
     max-width: 100vw;
+  }
+
+  /* Header */
+  .header {
+    padding: 8px 10px;
+    gap: 6px;
+  }
+
+  .header-left h1 {
+    font-size: 1.25rem;
+    white-space: nowrap;
+  }
+
+  .player-info {
+    font-size: 0.75rem;
+  }
+
+  .header-center {
+    gap: 6px;
+    min-width: 0;
+  }
+
+  .turn-indicator {
+    font-size: 0.78rem;
+    padding: 3px 8px;
+  }
+
+  .code-display {
+    padding: 5px 10px;
+    font-size: 0.82rem;
+  }
+
+  .header-right {
+    gap: 6px;
+    flex-shrink: 0;
+  }
+
+  .sound-toggle,
+  .help-button,
+  .btn-rules-toggle {
+    padding: 5px 8px;
+    font-size: 1rem;
+  }
+
+  /* Game content */
+  .game-content {
+    gap: 8px;
+    padding: 8px;
+  }
+
+  /* Card display */
+  .card-display {
+    padding: 12px;
+    margin-bottom: 0;
+  }
+
+  .table-card-banner {
+    gap: 6px;
+    margin-bottom: 8px;
+  }
+
+  .table-card-banner-img {
+    height: 48px;
+  }
+
+  .table-card-label {
+    font-size: 0.7rem;
+  }
+
+  .table-card-name {
+    font-size: 1.1rem;
+    padding: 3px 10px;
+  }
+
+  /* Table flip cards */
+  .card-flip {
+    width: clamp(52px, 13vw, 72px);
+    height: clamp(72px, 18vw, 100px);
+  }
+
+  /* Liar result banner */
+  .liar-result-banner {
+    padding: 10px 14px;
+    max-width: 100%;
+  }
+
+  .liar-result-headline {
+    font-size: 1rem;
+  }
+
+  /* Player panel / leaderboard */
+  .player-panel {
+    padding: 6px 10px;
+    margin-bottom: 0;
+  }
+
+  /* Bottom panel */
+  .bottom-panel {
+    padding: 8px 10px;
+  }
+
+  .bottom-controls {
+    padding: 0 0 6px;
+  }
+
+  /* Hand cards */
+  .hand-card-img {
+    width: clamp(48px, 12vw, 72px);
+  }
+
+  /* Action buttons */
+  .action-buttons {
+    gap: 8px;
+    padding: 8px 0 0;
   }
 }
 
