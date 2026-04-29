@@ -17,6 +17,9 @@ const cb = (callback, data) => {
 // playerId → setTimeout handle for in-game disconnect grace period
 const disconnectTimers = {};
 
+// lobbyCode → setTimeout handle for timed game countdown
+const gameTimers = {};
+
 async function emitPrivateHands(io, lobbyCode, gameEngine) {
   const sockets = await io.in(lobbyCode).fetchSockets();
   for (const s of sockets) {
@@ -31,12 +34,14 @@ module.exports = (io) => {
   io.on('connection', (socket) => {
     logger.log(`User connected: ${socket.id}`);
 
-    socket.on('lobby:create', (playerName, callback) => {
+    socket.on('lobby:create', (playerName, settings, callback) => {
+      // Support old clients that omit settings
+      if (typeof settings === 'function') { callback = settings; settings = {}; }
       try {
         const playerId = uuidv4();
         const lobbyCode = generateLobbyCode();
 
-        const result = lobbyStore.createLobby(lobbyCode, playerName, playerId);
+        const result = lobbyStore.createLobby(lobbyCode, playerName, playerId, settings);
         if (!result.success) {
           cb(callback, { success: false, message: result.message });
           return;
@@ -65,7 +70,7 @@ module.exports = (io) => {
       }
     });
 
-    socket.on('lobby:join', (lobbyCode, playerName, callback) => {
+    socket.on('lobby:join', async (lobbyCode, playerName, callback) => {
       try {
         const playerId = uuidv4();
         const result = lobbyStore.joinLobby(lobbyCode.toUpperCase(), playerName, playerId);
@@ -75,20 +80,35 @@ module.exports = (io) => {
           return;
         }
 
-        socket.join(lobbyCode);
-        socket.data.lobbyCode = lobbyCode;
+        socket.join(lobbyCode.toUpperCase());
+        socket.data.lobbyCode = lobbyCode.toUpperCase();
         socket.data.playerId = playerId;
         socket.data.playerName = playerName;
 
-        const lobby = lobbyStore.getLobby(lobbyCode);
-        io.to(lobbyCode).emit('lobby:updated', {
-          lobbyCode,
+        if (result.joinedRunning) {
+          // Mid-game join — add player to GameEngine
+          const gameEngine = sessionStore.getSession(lobbyCode.toUpperCase());
+          if (gameEngine) {
+            const newPlayer = new Player(playerId, playerName);
+            gameEngine.players.push(newPlayer);
+            const gameState = gameEngine.getGameState();
+            socket.emit('game:state', gameState);
+            socket.emit('game:hand', []);
+            io.to(lobbyCode.toUpperCase()).emit('game:state', gameState);
+          }
+          cb(callback, { success: true, lobbyCode: lobbyCode.toUpperCase(), playerId, joinedRunning: true });
+          return;
+        }
+
+        const lobby = lobbyStore.getLobby(lobbyCode.toUpperCase());
+        io.to(lobbyCode.toUpperCase()).emit('lobby:updated', {
+          lobbyCode: lobbyCode.toUpperCase(),
           players: lobby.players
         });
 
         cb(callback, {
           success: true,
-          lobbyCode,
+          lobbyCode: lobbyCode.toUpperCase(),
           playerId,
           players: lobby.players
         });
@@ -152,7 +172,7 @@ module.exports = (io) => {
         }
 
         const players = lobby.players.map(p => new Player(p.id, p.name));
-        const gameEngine = new GameEngine(players);
+        const gameEngine = new GameEngine(players, startResult.settings);
         const sessionResult = sessionStore.createSession(lobbyCode, gameEngine);
         if (!sessionResult.success) {
           cb(callback, { success: false, message: sessionResult.message });
@@ -162,11 +182,37 @@ module.exports = (io) => {
         gameEngine.startRound();
         const gameState = gameEngine.getGameState();
 
-        io.to(lobbyCode).emit('game:started', { lobbyCode, gameState });
+        let endTime = null;
+        if (startResult.settings?.mode === 'timed' && startResult.settings?.timedMinutes) {
+          endTime = Date.now() + startResult.settings.timedMinutes * 60 * 1000;
+          gameTimers[lobbyCode] = setTimeout(() => {
+            delete gameTimers[lobbyCode];
+            const engine = sessionStore.getSession(lobbyCode);
+            if (!engine) return;
+            const timedResult = engine.resolveTimedGame();
+            if (timedResult.winner) {
+              io.to(lobbyCode).emit('game:won', {
+                winnerId: timedResult.winner.id,
+                winnerName: timedResult.winner.name,
+                finalScore: timedResult.winner.mainScore,
+              });
+              sessionStore.deleteSession(lobbyCode);
+              lobbyStore.deleteLobby(lobbyCode);
+            } else {
+              // Tiebreak: start new round among leaders
+              engine.startRound();
+              const tbState = engine.getGameState();
+              io.to(lobbyCode).emit('game:timeUp', { tiebreak: true, gameState: tbState });
+              emitPrivateHands(io, lobbyCode, engine);
+            }
+          }, startResult.settings.timedMinutes * 60 * 1000);
+        }
+
+        io.to(lobbyCode).emit('game:started', { lobbyCode, gameState, settings: startResult.settings, endTime });
 
         await emitPrivateHands(io, lobbyCode, gameEngine);
 
-        cb(callback, { success: true, gameState });
+        cb(callback, { success: true, gameState, settings: startResult.settings, endTime });
       } catch (error) {
         logger.error('Error starting game', error);
         cb(callback, { success: false, message: 'Server error' });
@@ -175,7 +221,7 @@ module.exports = (io) => {
 
     socket.on('lobby:list', (callback) => {
       try {
-        const lobbies = lobbyStore.getPublicLobbies();
+        const lobbies = lobbyStore.getAllPublicLobbies();
         cb(callback, { success: true, lobbies });
       } catch (error) {
         logger.error('Error listing lobbies', error);
@@ -183,35 +229,57 @@ module.exports = (io) => {
       }
     });
 
+    socket.on('game:checkRejoin', ({ lobbyCode, playerId }, callback) => {
+      try {
+        const inTimer = !!disconnectTimers[playerId];
+        const engine = sessionStore.getSession(lobbyCode);
+        const player = engine?.players.find(p => p.id === playerId && !p.spectator);
+        cb(callback, { canRejoin: !!(inTimer || player) });
+      } catch (error) {
+        cb(callback, { canRejoin: false });
+      }
+    });
+
     socket.on('game:rejoin', (lobbyCode, playerId, callback) => {
       try {
-        const timer = disconnectTimers[playerId];
-        if (!timer) {
-          cb(callback, { success: false, message: 'Rejoin window expired' });
-          return;
-        }
-
-        clearTimeout(timer);
-        delete disconnectTimers[playerId];
-
-        socket.join(lobbyCode);
-        socket.data.lobbyCode = lobbyCode;
-        socket.data.playerId = playerId;
-
         const gameEngine = sessionStore.getSession(lobbyCode);
         if (!gameEngine) {
           cb(callback, { success: false, message: 'Game no longer active' });
           return;
         }
 
+        const player = gameEngine.players.find(p => p.id === playerId);
+        const inTimer = !!disconnectTimers[playerId];
+
+        if (!player && !inTimer) {
+          cb(callback, { success: false, message: 'Not a member of this game' });
+          return;
+        }
+
+        // Clear disconnect timer if active
+        if (inTimer) {
+          clearTimeout(disconnectTimers[playerId]);
+          delete disconnectTimers[playerId];
+        }
+
+        // Re-activate if player was spectated due to timeout
+        if (player && player.spectator) {
+          player.spectator = false;
+          if (!gameEngine.turnOrder.includes(playerId)) {
+            gameEngine.turnOrder.push(playerId);
+          }
+        }
+
+        socket.join(lobbyCode);
+        socket.data.lobbyCode = lobbyCode;
+        socket.data.playerId = playerId;
+
         const gameState = gameEngine.getGameState();
         socket.emit('game:state', gameState);
-
-        const player = gameEngine.players.find(p => p.id === playerId);
         if (player) socket.emit('game:hand', player.hand);
 
         io.to(lobbyCode).emit('player:reconnected', { playerId });
-        cb(callback, { success: true, gameState });
+        cb(callback, { success: true, gameState, hand: player?.hand ?? [] });
       } catch (error) {
         logger.error('Error rejoining game', error);
         cb(callback, { success: false, message: 'Server error' });
@@ -224,7 +292,7 @@ module.exports = (io) => {
         const gameEngine = sessionStore.getSession(lobbyCode);
         if (gameEngine) {
           // In active game — start 30s grace period
-          io.to(lobbyCode).emit('player:disconnected', { playerId, playerName, timeoutMs: 30000 });
+          io.to(lobbyCode).emit('player:disconnected', { playerId, playerName, timeoutMs: 120000 });
           disconnectTimers[playerId] = setTimeout(() => {
             delete disconnectTimers[playerId];
             gameEngine.removePlayer(playerId);
@@ -246,7 +314,7 @@ module.exports = (io) => {
               sessionStore.deleteSession(lobbyCode);
               lobbyStore.deleteLobby(lobbyCode);
             }
-          }, 30000);
+          }, 120000);
         } else {
           // In lobby — remove immediately
           lobbyStore.leaveLobby(lobbyCode, playerId);

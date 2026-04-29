@@ -8,7 +8,7 @@ const { isTruthful, calculateScoreChange, shouldEnterTiebreak, getActivePlayers,
 const logger = require('../utils/logger');
 
 class GameEngine {
-  constructor(players) {
+  constructor(players, settings = {}) {
     this.players = players; // Array of Player objects
     this.roundNumber = 0;
     this.winningCard = null;
@@ -17,6 +17,12 @@ class GameEngine {
     this.playHistory = []; // { playerId, playerName, cardsPlayed: N, claim: "3 Kings" }
     this.roundPlays = {}; // { playerId: { cardsPlayed[], truthful: bool } }
     this.deck = null;
+    this.settings = {
+      mode: settings.mode || 'standard', // standard | short | timed
+      scoreThreshold: settings.mode === 'short' ? 10 : 20,
+      timedMinutes: settings.timedMinutes || null,
+    };
+    this.timedThreshold = null; // set when timer fires
   }
 
   /**
@@ -35,7 +41,8 @@ class GameEngine {
     logger.log(`Winning card: ${Deck.getCardName(this.winningCard)}`);
 
     // Clear hands and deal 5 cards to each active player
-    const activePlayers = getActivePlayers(this.players);
+    const threshold = this.timedThreshold ?? this.settings.scoreThreshold;
+    const activePlayers = getActivePlayers(this.players, threshold);
     activePlayers.forEach(player => {
       player.clearHand();
       player.cardsPlayedCount = 0;
@@ -206,18 +213,36 @@ class GameEngine {
    * @returns {Player|null}
    */
   isVictoryConditionMet() {
-    if (shouldEnterTiebreak(this.players)) {
-      const activePlayers = getActivePlayers(this.players);
-      activePlayers.forEach(p => {
-        p.spectator = false;
-      });
-      this.players.filter(p => !activePlayers.includes(p)).forEach(p => {
-        p.spectator = true;
-      });
+    // Timed game: skip score-based win until timer fires and sets timedThreshold
+    if (this.settings.mode === 'timed' && this.timedThreshold === null) return null;
 
-      return getWinner(this.players);
+    const threshold = this.timedThreshold ?? this.settings.scoreThreshold;
+    if (shouldEnterTiebreak(this.players, threshold)) {
+      const activePlayers = getActivePlayers(this.players, threshold);
+      activePlayers.forEach(p => { p.spectator = false; });
+      this.players.filter(p => !activePlayers.includes(p)).forEach(p => { p.spectator = true; });
+      return getWinner(this.players, threshold);
     }
     return null;
+  }
+
+  /**
+   * Resolve a timed game when the countdown expires.
+   * Spectates non-leaders, sets timedThreshold to enable tiebreak logic.
+   * @returns {{ winner: Player|null }} winner if solo leader, null if tiebreak needed
+   */
+  resolveTimedGame() {
+    const maxScore = Math.max(...this.players.map(p => p.mainScore));
+    this.timedThreshold = maxScore;
+
+    const leaders = this.players.filter(p => p.mainScore === maxScore);
+    this.players.forEach(p => { p.spectator = p.mainScore < maxScore; });
+
+    if (leaders.length === 1) {
+      return { winner: leaders[0] };
+    }
+    // Tiebreak: multiple players tied — continue game with these players only
+    return { winner: null };
   }
 
   /**
@@ -230,7 +255,8 @@ class GameEngine {
       currentPlayerId: this.turnOrder[this.currentPlayerIndex],
       players: this.players.map(p => p.getState()),
       playHistory: this.playHistory,
-      turnOrder: this.turnOrder
+      turnOrder: this.turnOrder,
+      settings: this.settings,
     };
   }
 }

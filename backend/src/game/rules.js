@@ -38,44 +38,40 @@ function calculateScoreChange(isLiarCorrect, bonusModifier) {
 }
 
 /**
- * Check if any player has reached tie-break condition (>= 20 points)
- * @param {Player[]} players - Array of player objects
+ * Check if any player has reached tie-break condition
+ * @param {Player[]} players
+ * @param {number} threshold - score threshold (default 20)
  * @returns {boolean}
  */
-function shouldEnterTiebreak(players) {
-  return players.some(p => p.mainScore >= 20);
+function shouldEnterTiebreak(players, threshold = 20) {
+  return players.some(p => p.mainScore >= threshold);
 }
 
 /**
- * Get active player list for tie-break mode
- * Only players with the highest score remain active
- * @param {Player[]} players - Array of player objects
+ * Get active players for tie-break: only highest-scorers remain
+ * @param {Player[]} players
+ * @param {number} threshold
  * @returns {Player[]}
  */
-function getActivePlayers(players) {
-  if (!shouldEnterTiebreak(players)) {
+function getActivePlayers(players, threshold = 20) {
+  if (!shouldEnterTiebreak(players, threshold)) {
     return players.filter(p => !p.spectator);
   }
-
   const maxScore = Math.max(...players.map(p => p.mainScore));
   return players.filter(p => p.mainScore === maxScore);
 }
 
 /**
  * Check if game has a definitive winner
- * @param {Player[]} players - Array of player objects
+ * @param {Player[]} players
+ * @param {number} threshold
  * @returns {Player|null}
  */
-function getWinner(players) {
-  const activePlayers = getActivePlayers(players);
-
-  if (activePlayers.length === 1) {
-    const player = activePlayers[0];
-    if (player.mainScore >= 20) {
-      return player;
-    }
+function getWinner(players, threshold = 20) {
+  const activePlayers = getActivePlayers(players, threshold);
+  if (activePlayers.length === 1 && activePlayers[0].mainScore >= threshold) {
+    return activePlayers[0];
   }
-
   return null;
 }
 

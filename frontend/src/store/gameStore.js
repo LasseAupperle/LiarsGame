@@ -4,7 +4,9 @@
 
 import { create } from 'zustand';
 
-const useGameStore = create((set) => ({
+const SESSION_KEY = 'lg_session';
+
+const useGameStore = create((set, get) => ({
   // Game state
   gameCode: null,
   playerId: null,
@@ -29,6 +31,10 @@ const useGameStore = create((set) => ({
 
   // Winner data
   winner: null,
+
+  // Game settings (mode, scoreThreshold, timedMinutes) + timer end time
+  gameSettings: null,
+  gameEndTime: null,
 
   // Actions
   setGameCode: (code) => set({ gameCode: code }),
@@ -61,7 +67,19 @@ const useGameStore = create((set) => ({
 
   clearHistory: () => set({ history: [] }),
 
-  reset: () =>
+  saveSession: () => {
+    const { gameCode, playerId, playerName } = get();
+    if (gameCode && playerId && playerName) {
+      localStorage.setItem(SESSION_KEY, JSON.stringify({ gameCode, playerId, playerName }));
+    }
+  },
+
+  clearSession: () => {
+    localStorage.removeItem(SESSION_KEY);
+  },
+
+  reset: () => {
+    localStorage.removeItem(SESSION_KEY);
     set({
       gameCode: null,
       playerId: null,
@@ -76,7 +94,8 @@ const useGameStore = create((set) => ({
       history: [],
       myHand: [],
       winner: null
-    })
+    });
+  }
 }));
 
 export default useGameStore;

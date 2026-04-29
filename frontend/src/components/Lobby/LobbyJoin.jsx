@@ -9,7 +9,7 @@ export default function LobbyJoin({ onBack, initialCode = '' }) {
   const [lobbyCode, setLobbyCode] = useState(initialCode);
   const [playerName, setPlayerName] = useState('');
   const [loading, setLoading] = useState(false);
-  const { emit, setPlayerId, setPlayerName: setGamePlayerName, setGameCode, setStatus, setPlayers } = useGame();
+  const { emit, setPlayerId, setPlayerName: setGamePlayerName, setGameCode, setStatus, setPlayers, saveSession, acceptGameState, setMyHand } = useGame();
 
   const handleJoinLobby = (e) => {
     e.preventDefault();
@@ -18,14 +18,31 @@ export default function LobbyJoin({ onBack, initialCode = '' }) {
     setLoading(true);
     emit('lobby:join', lobbyCode.toUpperCase(), playerName, (response) => {
       setLoading(false);
-      if (response.success) {
-        setGamePlayerName(playerName);
-        setPlayerId(response.playerId);
-        setPlayers(response.players);
-        setGameCode(response.lobbyCode);
-        setStatus('lobby');
-      } else {
+      if (!response.success) {
         alert('Error joining lobby: ' + response.message);
+        return;
+      }
+
+      setGamePlayerName(playerName);
+      setPlayerId(response.playerId);
+      setGameCode(response.lobbyCode);
+
+      if (response.joinedRunning) {
+        // Mid-game join: fetch current state via rejoin
+        emit('game:rejoin', response.lobbyCode, response.playerId, (rejoinRes) => {
+          if (rejoinRes.success) {
+            acceptGameState(rejoinRes.gameState);
+            if (rejoinRes.hand) setMyHand(rejoinRes.hand);
+            setStatus('playing');
+            saveSession();
+          } else {
+            setStatus('lobby');
+          }
+        });
+      } else {
+        setPlayers(response.players);
+        setStatus('lobby');
+        saveSession();
       }
     });
   };

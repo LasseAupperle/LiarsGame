@@ -9,7 +9,7 @@ class LobbyStore {
     this.lobbies = {}; // { lobbyCode: { players[], status, createdAt } }
   }
 
-  createLobby(lobbyCode, playerName, playerId) {
+  createLobby(lobbyCode, playerName, playerId, settings = {}) {
     if (this.lobbies[lobbyCode]) {
       return { success: false, message: 'Lobby already exists' };
     }
@@ -19,7 +19,8 @@ class LobbyStore {
       players: [{ id: playerId, name: playerName }],
       status: 'waiting', // waiting | playing | finished
       createdAt: Date.now(),
-      host: playerId
+      host: playerId,
+      settings: { mode: settings.mode || 'standard', timedMinutes: settings.timedMinutes || null },
     };
 
     logger.log(`Lobby created: ${lobbyCode}`);
@@ -30,6 +31,15 @@ class LobbyStore {
     const lobby = this.lobbies[lobbyCode];
     if (!lobby) {
       return { success: false, message: 'Lobby not found' };
+    }
+
+    if (lobby.status === 'playing') {
+      if (lobby.players.length >= 4) {
+        return { success: false, message: 'Game is full' };
+      }
+      lobby.players.push({ id: playerId, name: playerName });
+      logger.log(`${playerName} joined running game ${lobbyCode}`);
+      return { success: true, lobbyCode, players: lobby.players, joinedRunning: true };
     }
 
     if (lobby.status !== 'waiting') {
@@ -88,7 +98,7 @@ class LobbyStore {
 
     lobby.status = 'playing';
     logger.log(`Game started in lobby ${lobbyCode} with ${lobby.players.length} players`);
-    return { success: true, players: lobby.players };
+    return { success: true, players: lobby.players, settings: lobby.settings };
   }
 
   getLobby(lobbyCode) {
@@ -103,6 +113,16 @@ class LobbyStore {
         playerCount: l.players.length,
         maxPlayers: 4
       }));
+  }
+
+  getAllPublicLobbies() {
+    return Object.values(this.lobbies).map(l => ({
+      code: l.code,
+      playerCount: l.players.length,
+      maxPlayers: 4,
+      status: l.status,
+      roundNumber: l.roundNumber ?? null,
+    }));
   }
 
   getAllLobbies() {

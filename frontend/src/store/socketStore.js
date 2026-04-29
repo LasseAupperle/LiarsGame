@@ -29,6 +29,7 @@ const useSocketStore = create((set, get) => ({
         socket.emit('game:rejoin', gameCode, playerId, (res) => {
           if (res?.success) {
             acceptGameState(res.gameState);
+            if (res.hand) useGameStore.getState().setMyHand(res.hand);
           }
         });
       }

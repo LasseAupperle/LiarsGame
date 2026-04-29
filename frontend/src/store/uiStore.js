@@ -26,6 +26,9 @@ const useUIStore = create((set) => ({
     scores: null,
   },
 
+  discardPile: [],      // [{ count, cards, isLiarCorrect, accusedName, noLiar }]
+  roundTransition: null, // { roundNumber, lastResult } | null
+
   // Actions
   toggleCard: (cardId) =>
     set((state) => {
@@ -65,6 +68,15 @@ const useUIStore = create((set) => ({
       }
     }),
 
+  addToDiscardPile: (entry) =>
+    set((state) => ({ discardPile: [...state.discardPile, entry] })),
+
+  clearDiscardPile: () => set({ discardPile: [] }),
+
+  setRoundTransition: (data) => set({ roundTransition: data }),
+
+  clearRoundTransition: () => set({ roundTransition: null }),
+
   setShowRules: (show) => set({ showRules: show }),
 
   setError: (error) => set({ error }),
@@ -80,6 +92,8 @@ const useUIStore = create((set) => ({
       showRules: false,
       error: null,
       disconnectedPlayers: [],
+      discardPile: [],
+      roundTransition: null,
       tableDisplay: {
         count: 0, revealed: false, noLiar: false, cards: null,
         accusedName: null, callerName: null,

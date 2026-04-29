@@ -8,7 +8,7 @@ import useGame from '../../hooks/useGame';
 export default function LobbyCreate({ onBack }) {
   const [playerName, setPlayerName] = useState('');
   const [loading, setLoading] = useState(false);
-  const { emit, setPlayerId, setPlayerName: setGamePlayerName, setGameCode, setStatus, setPlayers } = useGame();
+  const { emit, setPlayerId, setPlayerName: setGamePlayerName, setGameCode, setStatus, setPlayers, saveSession } = useGame();
 
   const handleCreateLobby = (e) => {
     e.preventDefault();
@@ -23,6 +23,7 @@ export default function LobbyCreate({ onBack }) {
         setPlayers(response.players);
         setGameCode(response.lobbyCode);
         setStatus('lobby');
+        saveSession();
       } else {
         alert('Error creating lobby: ' + response.message);
       }

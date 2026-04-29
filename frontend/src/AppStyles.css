@@ -1843,3 +1843,424 @@ form {
   padding: 8px 18px;
   font-size: 0.9rem;
 }
+
+/* ── Poker Table Layout ── */
+
+.poker-table-wrap {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  overflow: hidden;
+  min-height: 0;
+}
+
+/* Opponent seats row */
+.opponents-row {
+  display: flex;
+  justify-content: center;
+  gap: 16px;
+  padding: 10px 16px 6px;
+  flex-wrap: wrap;
+  flex-shrink: 0;
+}
+
+.waiting-opponents {
+  color: var(--text-on-dark-muted);
+  font-size: 0.85rem;
+  align-self: center;
+}
+
+/* Score strip */
+.score-strip {
+  display: flex;
+  gap: 8px;
+  padding: 4px 12px;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.78rem;
+  color: var(--text-on-dark-muted);
+  border-bottom: 1px solid rgba(102, 126, 234, 0.2);
+  flex-shrink: 0;
+}
+
+.score-chip {
+  padding: 2px 8px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.score-chip.self {
+  color: var(--accent);
+}
+
+.score-chip.active {
+  border: 1px solid #f39c12;
+  color: #f39c12;
+}
+
+.score-strip-round {
+  margin-left: auto;
+  font-size: 0.75rem;
+  opacity: 0.6;
+}
+
+/* Table felt */
+.table-felt {
+  flex: 1;
+  background: radial-gradient(ellipse at center, #1e7a45 0%, #0f4a28 100%);
+  border-radius: 50% / 22%;
+  border: 6px solid #8B6914;
+  box-shadow: inset 0 0 60px rgba(0, 0, 0, 0.5), 0 4px 24px rgba(0, 0, 0, 0.6);
+  margin: 4px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  overflow: hidden;
+  min-height: 0;
+}
+
+/* Table center content */
+.table-center {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 12px;
+  width: 100%;
+  max-height: 100%;
+  overflow: hidden;
+}
+
+.table-card-badge {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(0, 0, 0, 0.35);
+  border-radius: 8px;
+  padding: 4px 10px;
+}
+
+.table-main-area {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+/* Discard pile */
+.discard-pile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.discard-stack {
+  position: relative;
+  width: 50px;
+  height: 70px;
+}
+
+.discard-card {
+  position: absolute;
+  width: 46px;
+  height: auto;
+  border-radius: 4px;
+  opacity: 0.7;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.5);
+}
+
+.discard-label {
+  font-size: 0.7rem;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+/* Played area */
+.played-area {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Player seat */
+.player-seat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  border-radius: 12px;
+  border: 2px solid transparent;
+  background: rgba(0, 0, 0, 0.3);
+  transition: border-color 0.2s, box-shadow 0.2s;
+  min-width: 80px;
+}
+
+.player-seat.active-turn {
+  border-color: #f39c12;
+  box-shadow: 0 0 16px rgba(243, 156, 18, 0.6);
+  animation: pulse 1.2s ease-in-out infinite;
+}
+
+.player-seat.disconnected {
+  opacity: 0.45;
+  border-color: rgba(99, 110, 114, 0.4);
+}
+
+.player-seat.self-seat {
+  border-color: rgba(102, 126, 234, 0.4);
+}
+
+.seat-cards {
+  display: flex;
+  align-items: flex-end;
+  min-height: 36px;
+}
+
+.seat-card-back {
+  width: 28px;
+  height: auto;
+  border-radius: 3px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.5);
+}
+
+.seat-info {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+
+.seat-name {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-on-dark);
+  text-align: center;
+  max-width: 90px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.seat-score {
+  font-size: 0.72rem;
+  color: var(--accent);
+  font-weight: bold;
+}
+
+/* Self area (bottom) */
+.self-area {
+  flex-shrink: 0;
+  border-top: 2px solid var(--accent);
+  background: var(--bg-game-panel);
+  padding: 6px 12px 8px;
+}
+
+.self-hand-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.self-hand-row .player-hand {
+  flex: 1;
+  padding: 0;
+  margin: 0;
+}
+
+.self-hand-row .player-hand h3 {
+  display: none;
+}
+
+.self-hand-row .player-hand .selection-info {
+  display: none;
+}
+
+.self-hand-row .cards-container {
+  justify-content: center;
+}
+
+.hide-icon-btn {
+  flex-shrink: 0;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border-radius: 8px;
+  border: 2px solid var(--accent);
+  background: transparent;
+  color: var(--text-on-dark);
+  font-size: 1rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.2s;
+}
+
+.hide-icon-btn:hover {
+  background: rgba(102, 126, 234, 0.2);
+}
+
+.self-action-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding-top: 6px;
+}
+
+/* Round transition overlay */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes scaleIn {
+  from { transform: scale(0.85); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+
+.round-transition-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  background: rgba(0, 0, 0, 0.78);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: fadeIn 0.2s ease;
+  cursor: pointer;
+}
+
+.round-transition-card {
+  background: var(--bg-game-panel);
+  border: 2px solid var(--accent);
+  border-radius: 16px;
+  padding: 32px 48px;
+  text-align: center;
+  animation: scaleIn 0.25s ease;
+  max-width: 90vw;
+}
+
+.round-transition-card h2 {
+  font-size: 2.5rem;
+  color: var(--accent);
+  margin: 0 0 10px;
+}
+
+.rt-summary {
+  font-size: 0.95rem;
+  color: var(--text-on-dark-muted);
+  margin: 0 0 12px;
+}
+
+.rt-hint {
+  font-size: 0.8rem;
+  color: var(--text-on-dark-muted);
+  opacity: 0.6;
+  margin: 0;
+}
+
+/* Rejoin banner in lobby */
+.rejoin-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 16px;
+  background: rgba(0, 184, 148, 0.12);
+  border: 1px solid #00b894;
+  border-radius: 10px;
+  margin-bottom: 16px;
+  font-size: 0.9rem;
+  color: var(--text-on-dark);
+}
+
+.btn-rejoin {
+  padding: 7px 16px;
+  background: #00b894;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-weight: bold;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.2s;
+}
+
+.btn-rejoin:hover {
+  background: #00cda8;
+}
+
+/* In-progress lobby row */
+.lobby-list-item.in-progress {
+  border-color: rgba(102, 126, 234, 0.3);
+  background: rgba(102, 126, 234, 0.06);
+}
+
+.lobby-item-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  min-width: 0;
+}
+
+.lobby-status-badge {
+  font-size: 0.72rem;
+  padding: 2px 6px;
+  border-radius: 10px;
+  background: rgba(102, 126, 234, 0.2);
+  color: var(--accent);
+  white-space: nowrap;
+}
+
+/* Mobile poker table adjustments */
+@media (max-width: 768px) {
+  .table-felt {
+    border-radius: 20px;
+    margin: 4px 8px;
+  }
+
+  .opponents-row {
+    padding: 6px 8px 4px;
+    gap: 8px;
+  }
+
+  .player-seat {
+    padding: 5px 8px;
+    min-width: 64px;
+  }
+
+  .seat-card-back {
+    width: 22px;
+  }
+
+  .seat-name {
+    font-size: 0.72rem;
+    max-width: 72px;
+  }
+
+  .seat-score {
+    font-size: 0.65rem;
+  }
+
+  .table-center {
+    padding: 8px;
+    gap: 6px;
+  }
+
+  .round-transition-card {
+    padding: 24px 28px;
+  }
+
+  .round-transition-card h2 {
+    font-size: 2rem;
+  }
+}

@@ -4,19 +4,12 @@ import useKeyboardShortcuts from '../../hooks/useKeyboardShortcuts';
 import useTouchGestures from '../../hooks/useTouchGestures';
 import Header from '../Shared/Header';
 import NetworkStatus from '../Shared/NetworkStatus';
-import CardDisplay from './CardDisplay';
-import PlayHistory from './PlayHistory';
-import PlayerPanel from './PlayerPanel';
-import PlayerHand from './PlayerHand';
-import ActionButtons from './ActionButtons';
-import CardVisibilityToggle from './CardVisibilityToggle';
 import DisconnectBanner from './DisconnectBanner';
-import RulesModal from './RulesModal';
+import PokerTable from './PokerTable';
 
 export default function GameBoard() {
   const {
     gameCode,
-    myHand,
     on,
     off,
     acceptGameState,
@@ -94,21 +87,7 @@ export default function GameBoard() {
       <NetworkStatus />
       <DisconnectBanner />
       <Header />
-
-      <div className="game-content">
-        <CardDisplay />
-        <PlayHistory />
-        <PlayerPanel />
-      </div>
-
-      <div className="bottom-panel">
-        <div className="bottom-controls">
-          <CardVisibilityToggle />
-          <RulesModal />
-        </div>
-        <PlayerHand hand={myHand} />
-        <ActionButtons />
-      </div>
+      <PokerTable />
     </div>
   );
 }
