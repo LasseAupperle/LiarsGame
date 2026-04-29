@@ -1905,6 +1905,106 @@ form {
   opacity: 0.6;
 }
 
+/* Mode badge in score strip */
+.mode-badge {
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+.mode-badge.mode-short { background: rgba(0, 184, 148, 0.2); color: #00b894; }
+.mode-badge.mode-timed { background: rgba(253, 203, 110, 0.2); color: #fdcb6e; }
+
+/* In-game countdown timer */
+.game-timer {
+  margin-left: 6px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--text-on-dark-muted);
+}
+.game-timer.urgent {
+  color: #e74c3c;
+  animation: urgentPulse 0.8s ease-in-out infinite;
+}
+@keyframes urgentPulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+
+/* Lobby mode selector */
+.mode-selector {
+  display: flex;
+  gap: 8px;
+  margin: 12px 0 8px;
+}
+.mode-option {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 10px 6px;
+  border-radius: 10px;
+  border: 2px solid rgba(255,255,255,0.08);
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+  background: rgba(255,255,255,0.03);
+}
+.mode-option input[type="radio"] { display: none; }
+.mode-option.selected {
+  border-color: var(--accent);
+  background: rgba(102, 126, 234, 0.12);
+}
+.mode-label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-on-dark);
+}
+.mode-desc {
+  font-size: 0.7rem;
+  color: var(--text-on-dark-muted);
+}
+
+/* Timed minutes input */
+.timed-input {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+.timed-input label {
+  font-size: 0.85rem;
+  color: var(--text-on-dark-muted);
+  white-space: nowrap;
+}
+.timed-input input {
+  width: 70px;
+  text-align: center;
+  padding: 8px;
+  border-radius: 8px;
+  border: 1px solid rgba(255,255,255,0.12);
+  background: rgba(255,255,255,0.06);
+  color: var(--text-on-dark);
+  font-size: 1rem;
+}
+
+/* Lobby mode badge (in LobbyRoom) */
+.lobby-mode-badge {
+  text-align: center;
+  padding: 4px 14px;
+  border-radius: 20px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  margin-bottom: 10px;
+  display: inline-block;
+  align-self: center;
+}
+.lobby-mode-badge.mode-standard { background: rgba(255,255,255,0.07); color: var(--text-on-dark-muted); }
+.lobby-mode-badge.mode-short { background: rgba(0,184,148,0.15); color: #00b894; }
+.lobby-mode-badge.mode-timed { background: rgba(253,203,110,0.15); color: #fdcb6e; }
+
 /* Table felt */
 .table-felt {
   flex: 1;

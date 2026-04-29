@@ -20,6 +20,8 @@ export default function LobbyRoom() {
     setStatus,
     acceptGameState,
     setMyHand,
+    setGameSettings,
+    gameSettings,
     emit,
     on,
     off,
@@ -41,6 +43,7 @@ export default function LobbyRoom() {
     const handleGameStart = (data) => {
       if (data.gameState) {
         acceptGameState(data.gameState);
+        if (data.settings) setGameSettings(data.settings, data.endTime || null);
         setStatus('playing');
       }
     };
@@ -93,8 +96,17 @@ export default function LobbyRoom() {
 
   const isHost = players.length > 0 && players[0].id === playerId;
 
+  const modeBadgeText = gameSettings?.mode === 'short'
+    ? 'Short Game — 10 pts'
+    : gameSettings?.mode === 'timed'
+    ? `Timed — ${gameSettings.timedMinutes} min`
+    : 'Standard — 20 pts';
+
   return (
     <div className="lobby-room">
+      {gameSettings && (
+        <div className={`lobby-mode-badge mode-${gameSettings.mode}`}>{modeBadgeText}</div>
+      )}
       <div className="lobby-code-section">
         <p className="lobby-code-label">Game Code</p>
         <button className="lobby-code-block" onClick={handleCopyCode} title="Click to copy">

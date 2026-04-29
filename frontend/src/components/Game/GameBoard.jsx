@@ -21,6 +21,7 @@ export default function GameBoard() {
     removeDisconnectedPlayer,
     setTableDisplay,
     clearTableDisplay,
+    setRoundTransition,
   } = useGame();
 
   useKeyboardShortcuts();
@@ -60,6 +61,12 @@ export default function GameBoard() {
     const handlePlayerDisconnected = (data) => addDisconnectedPlayer(data);
     const handlePlayerReconnected = (data) => removeDisconnectedPlayer(data.playerId);
     const handlePlayerLeft = (data) => removeDisconnectedPlayer(data.playerId);
+    const handleTimeUp = (data) => {
+      if (data.tiebreak) {
+        acceptGameState(data.gameState);
+        setRoundTransition({ roundNumber: data.gameState.roundNumber, timeUp: true });
+      }
+    };
 
     on('game:state', handleGameState);
     on('game:hand', handleHand);
@@ -69,6 +76,7 @@ export default function GameBoard() {
     on('player:disconnected', handlePlayerDisconnected);
     on('player:reconnected', handlePlayerReconnected);
     on('player:left', handlePlayerLeft);
+    on('game:timeUp', handleTimeUp);
 
     return () => {
       off('game:state', handleGameState);
@@ -79,6 +87,7 @@ export default function GameBoard() {
       off('player:disconnected', handlePlayerDisconnected);
       off('player:reconnected', handlePlayerReconnected);
       off('player:left', handlePlayerLeft);
+      off('game:timeUp', handleTimeUp);
     };
   }, [gameCode, acceptGameState, setMyHand, setWinner, setStatus, clearSelection, addDisconnectedPlayer, removeDisconnectedPlayer, setTableDisplay, clearTableDisplay, on, off]);
 

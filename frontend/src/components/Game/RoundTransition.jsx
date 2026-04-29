@@ -12,10 +12,12 @@ export default function RoundTransition() {
 
   if (!roundTransition) return null;
 
-  const { roundNumber, lastResult } = roundTransition;
+  const { roundNumber, lastResult, timeUp } = roundTransition;
 
   let summary = null;
-  if (lastResult) {
+  if (timeUp) {
+    summary = "Time's up! Tiebreak — tied players keep playing";
+  } else if (lastResult) {
     if (lastResult.noLiar) {
       summary = 'No liar called — everyone +1';
     } else if (lastResult.isLiarCorrect) {
@@ -28,7 +30,7 @@ export default function RoundTransition() {
   return (
     <div className="round-transition-overlay" onClick={clearRoundTransition}>
       <div className="round-transition-card">
-        <h2>Round {roundNumber}</h2>
+        {timeUp ? <h2>Time's Up!</h2> : <h2>Round {roundNumber}</h2>}
         {summary && <p className="rt-summary">{summary}</p>}
         <p className="rt-hint">Tap to continue</p>
       </div>

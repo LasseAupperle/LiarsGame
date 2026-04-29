@@ -49,6 +49,7 @@ const useGameStore = create((set, get) => ({
   setTurnOrder: (order) => set({ turnOrder: order }),
   setMyHand: (hand) => set({ myHand: hand }),
   setWinner: (winner) => set({ winner }),
+  setGameSettings: (settings, endTime = null) => set({ gameSettings: settings, gameEndTime: endTime }),
 
   acceptGameState: (gameData) =>
     set({
@@ -93,7 +94,9 @@ const useGameStore = create((set, get) => ({
       roundNumber: 0,
       history: [],
       myHand: [],
-      winner: null
+      winner: null,
+      gameSettings: null,
+      gameEndTime: null,
     });
   }
 }));
