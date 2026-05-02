@@ -2,11 +2,13 @@ import { useEffect } from 'react';
 import useGame from '../../hooks/useGame';
 
 export default function RoundTransition() {
-  const { roundTransition, clearRoundTransition } = useGame();
+  const { roundTransition, clearRoundTransition, clearTableDisplay } = useGame();
+
+  const dismiss = () => { clearRoundTransition(); clearTableDisplay(); };
 
   useEffect(() => {
     if (!roundTransition) return;
-    const t = setTimeout(clearRoundTransition, 2000);
+    const t = setTimeout(dismiss, 2000);
     return () => clearTimeout(t);
   }, [roundTransition]);
 
@@ -28,7 +30,7 @@ export default function RoundTransition() {
   }
 
   return (
-    <div className="round-transition-overlay" onClick={clearRoundTransition}>
+    <div className="round-transition-overlay" onClick={dismiss}>
       <div className="round-transition-card">
         {timeUp ? <h2>Time's Up!</h2> : <h2>Round {roundNumber}</h2>}
         {summary && <p className="rt-summary">{summary}</p>}

@@ -180,6 +180,7 @@ module.exports = (io) => {
         }
 
         gameEngine.startRound();
+        lobbyStore.updateRoundNumber(lobbyCode, gameEngine.roundNumber);
         const gameState = gameEngine.getGameState();
 
         let endTime = null;

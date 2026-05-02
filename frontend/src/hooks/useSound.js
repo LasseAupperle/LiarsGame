@@ -17,6 +17,7 @@ const sounds = {
 
 const useSound = () => {
   const soundEnabled = useUIStore((state) => state.soundEnabled);
+  const volume = useUIStore((state) => state.volume);
 
   const playSound = useCallback(
     (soundName) => {
@@ -26,12 +27,13 @@ const useSound = () => {
 
       try {
         const audio = new Audio(sounds[soundName]);
+        audio.volume = volume;
         audio.play().catch((err) => console.error('Error playing sound:', err));
       } catch (error) {
         console.error('Error loading sound:', error);
       }
     },
-    [soundEnabled]
+    [soundEnabled, volume]
   );
 
   return { playSound };

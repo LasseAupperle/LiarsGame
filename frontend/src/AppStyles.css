@@ -1854,6 +1854,12 @@ form {
   min-height: 0;
 }
 
+/* table-felt inside tg-felt fills available space */
+.tg-felt .table-felt {
+  flex: 1;
+  min-height: 0;
+}
+
 /* Opponent seats row */
 .opponents-row {
   display: flex;
@@ -2120,6 +2126,7 @@ form {
   display: flex;
   align-items: flex-end;
   min-height: 36px;
+  position: relative;
 }
 
 .seat-card-back {
@@ -2321,6 +2328,155 @@ form {
   white-space: nowrap;
 }
 
+/* ── Table Grid Layout (around-table seating) ── */
+
+.table-grid {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  grid-template-rows: auto 1fr auto auto;
+  grid-template-areas:
+    ".    top-opp .   "
+    "left felt    right"
+    ".    score   .   "
+    ".    self    .   ";
+  flex: 1;
+  min-height: 0;
+}
+
+.tg-top   { grid-area: top-opp; display: flex; justify-content: center; align-items: flex-start; padding: 10px 12px 4px; }
+.tg-left  { grid-area: left;    display: flex; align-items: center; padding: 0 8px 0 12px; }
+.tg-felt  { grid-area: felt;    display: flex; flex-direction: column; min-height: 0; padding: 4px 0; }
+.tg-right { grid-area: right;   display: flex; align-items: center; padding: 0 12px 0 8px; }
+.tg-score { grid-area: score; }
+.tg-self  { grid-area: self;    display: flex; flex-direction: column; align-items: center; }
+
+/* Left/right seated players — vertical card fan */
+.seat-cards-vertical {
+  flex-direction: column;
+  align-items: center;
+}
+
+/* Card count badge on opponent seats */
+.seat-card-count {
+  position: absolute;
+  bottom: -4px;
+  right: -6px;
+  background: var(--accent);
+  color: #fff;
+  font-size: 0.65rem;
+  font-weight: 700;
+  min-width: 16px;
+  height: 16px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 3px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.5);
+  pointer-events: none;
+}
+
+/* Turn order badge on seats */
+.turn-badge {
+  position: absolute;
+  top: -8px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(0,0,0,0.6);
+  color: var(--text-on-dark-muted);
+  font-size: 0.6rem;
+  padding: 1px 5px;
+  border-radius: 6px;
+  white-space: nowrap;
+}
+.player-seat { position: relative; }
+
+/* Hand glow when it's your turn */
+@keyframes handGlow {
+  0%, 100% { filter: drop-shadow(0 0 4px rgba(243,156,18,0.25)); }
+  50%       { filter: drop-shadow(0 0 16px rgba(243,156,18,0.9)); }
+}
+.self-hand-row.active-turn-hand .card-wrapper {
+  animation: handGlow 1.2s ease-in-out infinite;
+}
+
+/* Card match / no-match coloring on reveal */
+.card-match    { box-shadow: 0 0 16px rgba(39,174,96,0.7);  border: 3px solid #27ae60; border-radius: 10px; }
+.card-no-match { box-shadow: 0 0 16px rgba(231,76,60,0.7);  border: 3px solid #e74c3c; border-radius: 10px; }
+
+/* Volume control */
+.volume-control {
+  position: relative;
+}
+
+.volume-popover {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  background: var(--bg-surface);
+  border: 1px solid rgba(102,126,234,0.3);
+  border-radius: 10px;
+  padding: 10px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 180px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.4);
+  z-index: 200;
+}
+
+.volume-mute-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.82rem;
+  color: var(--text-on-dark);
+  cursor: pointer;
+}
+
+.volume-slider-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.8rem;
+}
+
+.volume-slider {
+  flex: 1;
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+
+.volume-pct {
+  font-size: 0.72rem;
+  color: var(--text-on-dark-muted);
+  text-align: center;
+}
+
+/* Exit to menu button */
+.btn-exit {
+  background: transparent;
+  border: 2px solid rgba(231,76,60,0.5);
+  color: rgba(231,76,60,0.8);
+  border-radius: 8px;
+  padding: 4px 8px;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background 0.2s, border-color 0.2s, color 0.2s;
+}
+.btn-exit:hover {
+  background: rgba(231,76,60,0.15);
+  border-color: #e74c3c;
+  color: #e74c3c;
+}
+
+/* PC max-width for cleaner layout */
+.game-board {
+  max-width: 1280px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
 /* Mobile poker table adjustments */
 @media (max-width: 768px) {
   .table-felt {
@@ -2328,10 +2484,8 @@ form {
     margin: 4px 8px;
   }
 
-  .opponents-row {
-    padding: 6px 8px 4px;
-    gap: 8px;
-  }
+  .tg-left, .tg-right { padding: 0 4px; }
+  .tg-top { padding: 6px 8px 2px; }
 
   .player-seat {
     padding: 5px 8px;

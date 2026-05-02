@@ -5,14 +5,14 @@ import ActionButtons from './ActionButtons';
 import RulesModal from './RulesModal';
 
 export default function SelfArea() {
-  const { myHand, cardsHidden, toggleCardsHidden } = useGame();
+  const { myHand, cardsHidden, toggleCardsHidden, isYourTurn } = useGame();
   const { tap } = useHapticFeedback();
 
   const handleToggle = () => { tap(); toggleCardsHidden(); };
 
   return (
     <div className="self-area">
-      <div className="self-hand-row">
+      <div className={`self-hand-row${isYourTurn ? ' active-turn-hand' : ''}`}>
         <PlayerHand hand={myHand} />
         <button
           className="hide-icon-btn"

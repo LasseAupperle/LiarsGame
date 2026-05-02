@@ -77,6 +77,7 @@ module.exports = (io) => {
           }
 
           gameEngine.startRound();
+          lobbyStore.updateRoundNumber(lobbyCode, gameEngine.roundNumber);
           const newRoundState = gameEngine.getGameState();
           io.to(lobbyCode).emit('game:state', newRoundState);
           await emitPrivateHands(io, lobbyCode, gameEngine);
@@ -148,6 +149,7 @@ module.exports = (io) => {
         }
 
         gameEngine.startRound();
+        lobbyStore.updateRoundNumber(lobbyCode, gameEngine.roundNumber);
         const gameState = gameEngine.getGameState();
         io.to(lobbyCode).emit('game:state', gameState);
         await emitPrivateHands(io, lobbyCode, gameEngine);

@@ -9,6 +9,7 @@ const useUIStore = create((set) => ({
   selectedCards: [],
   showModal: null, // play-confirm | liar-confirm | card-select | error
   soundEnabled: true,
+  volume: 1,
   cardsHidden: false,
   showRules: false,
   error: null,
@@ -45,6 +46,8 @@ const useUIStore = create((set) => ({
   closeModal: () => set({ showModal: null }),
 
   toggleSound: () => set((state) => ({ soundEnabled: !state.soundEnabled })),
+
+  setVolume: (v) => set({ volume: Math.max(0, Math.min(1, v)) }),
 
   toggleCardsHidden: () => set((state) => ({ cardsHidden: !state.cardsHidden })),
 
@@ -88,6 +91,7 @@ const useUIStore = create((set) => ({
       selectedCards: [],
       showModal: null,
       soundEnabled: true,
+      volume: 1,
       cardsHidden: false,
       showRules: false,
       error: null,

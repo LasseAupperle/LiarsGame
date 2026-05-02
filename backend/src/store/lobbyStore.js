@@ -125,6 +125,12 @@ class LobbyStore {
     }));
   }
 
+  updateRoundNumber(lobbyCode, roundNumber) {
+    if (this.lobbies[lobbyCode]) {
+      this.lobbies[lobbyCode].roundNumber = roundNumber;
+    }
+  }
+
   getAllLobbies() {
     return this.lobbies;
   }

@@ -97,7 +97,7 @@ export default function TableCenter() {
                       <div className="card-flip-front">
                         <img src="/assets/cards/card_back.png" alt="Card back" />
                       </div>
-                      <div className="card-flip-back">
+                      <div className={`card-flip-back${revealed && cards?.[i] != null ? (cards[i] === winningCard || cards[i] === 4 ? ' card-match' : ' card-no-match') : ''}`}>
                         <img
                           src={cards?.[i] != null ? CARD_IMAGES[cards[i]] : '/assets/cards/card_back.png'}
                           alt={cards?.[i] != null ? cardNames[cards[i]] : 'Card'}

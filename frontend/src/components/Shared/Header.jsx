@@ -3,16 +3,26 @@
  */
 
 import useGame from '../../hooks/useGame';
-import SoundToggle from './SoundToggle';
+import useGameStore from '../../store/gameStore';
+import useUIStore from '../../store/uiStore';
+import VolumeControl from './VolumeControl';
 import KeyboardShortcutsHelp from './KeyboardShortcutsHelp';
 
 export default function Header() {
-  const { gameCode, playerName, isYourTurn, currentPlayerId, players } = useGame();
+  const { gameCode, playerName, isYourTurn, currentPlayerId, players, status, emit } = useGame();
 
   const copyToClipboard = () => {
     if (gameCode) {
       navigator.clipboard.writeText(gameCode);
       alert('Lobby code copied!');
+    }
+  };
+
+  const handleExit = () => {
+    if (window.confirm('Leave the game and return to main menu?')) {
+      emit('lobby:leave', () => {});
+      useGameStore.getState().reset();
+      useUIStore.getState().reset();
     }
   };
 
@@ -45,7 +55,12 @@ export default function Header() {
 
       <div className="header-right">
         <KeyboardShortcutsHelp />
-        <SoundToggle />
+        <VolumeControl />
+        {status === 'playing' && (
+          <button className="btn-icon btn-exit" onClick={handleExit} title="Exit to main menu">
+            ⬅
+          </button>
+        )}
       </div>
     </div>
   );
