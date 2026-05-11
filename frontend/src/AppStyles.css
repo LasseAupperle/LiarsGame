@@ -2396,7 +2396,7 @@ form {
   0%, 100% { filter: drop-shadow(0 0 4px rgba(243,156,18,0.25)); }
   50%       { filter: drop-shadow(0 0 16px rgba(243,156,18,0.9)); }
 }
-.self-hand-row.active-turn-hand .card-wrapper {
+.self-hand-row.active-turn-hand .hand-card-wrap {
   animation: handGlow 1.2s ease-in-out infinite;
 }
 
