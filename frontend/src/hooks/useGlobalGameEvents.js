@@ -26,12 +26,19 @@ export default function useGlobalGameEvents() {
     };
 
     const handleHand = (hand) => useGameStore.getState().setMyHand(hand);
+    const handleChat = (message) => {
+      const { gameCode, playerId } = useGameStore.getState();
+      if (gameCode) useUIStore.getState().addChatMessage(gameCode, message, playerId);
+    };
 
     socket.on('game:started', handleGameStarted);
     socket.on('game:hand', handleHand);
+    socket.on('chat:message', handleChat);
     return () => {
       socket.off('game:started', handleGameStarted);
       socket.off('game:hand', handleHand);
+      socket.off('chat:message', handleChat);
     };
   }, [socket]);
+
 }

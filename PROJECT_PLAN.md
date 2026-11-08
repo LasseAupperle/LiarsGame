@@ -30,6 +30,7 @@ backend/src/
   game/                  pure game logic — Deck, Player, rules, GameEngine
   events/lobbyEvents.js  create/join/leave/start/list, presence, rejoin
   events/gameEvents.js   game:play, game:callLiar
+  events/chatEvents.js   chat:send, rate limit, bot banter
   events/gameFlow.js     shared progression: liar resolution, round end, victory, turn timer
                          (bots + disconnected auto-play), removal, timed mode
   game/BotBrain.js       bot decisions (pure, unit-tested)
@@ -62,7 +63,7 @@ frontend/public/         manifest.json, icons/, assets/cards, assets/sounds
   auto-play for a disconnected current player, late-rejoin sees the result (SPEC §2.1).
 - Poker-table UI with card art, sounds + volume, keyboard shortcuts, card hiding, rules modal.
 - PWA installable (manifest + icons + service worker).
-- Bots for solo play / filling a table; rematch in the same lobby.
+- Bots for solo play / filling a table; rematch in the same lobby; lobby/game chat.
 - Backend tests (unit, socket integration, presence, bots incl. a full solo game); CI on every push.
 
 ---
@@ -121,6 +122,10 @@ frontend/public/         manifest.json, icons/, assets/cards, assets/sounds
   bots, players who stayed) with `lastResult`; `game:won` carries `finalScores` + `rematch`.
   Result screen offers Rematch / Leave; `game:started` is now handled app-wide
   (`hooks/useGlobalGameEvents.js`) so players still on the result screen are dealt in.
+- **Chat** (SPEC §2.4): `chat:send` / `chat:message` in lobby and game (spectators too),
+  1–200 chars, 5 msgs / 10 s per player, last 50 kept per lobby and returned on join/rejoin,
+  survives rematch. Bots occasionally comment after liar calls. UI: floating 💬 button with
+  unread badge, panel with quick-reaction emoji (`components/Shared/ChatPanel.jsx`).
 
 ### 2026-11-08
 - Added `docs/SPEC.md` (source of truth) and `CLAUDE.md` (spec-first workflow).

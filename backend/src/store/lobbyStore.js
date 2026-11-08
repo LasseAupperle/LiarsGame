@@ -6,6 +6,7 @@ const { randomUUID } = require('crypto');
 const logger = require('../utils/logger');
 
 const MAX_PLAYERS = 4;
+const CHAT_HISTORY = 50;
 const BOT_NAMES = ['Ada', 'Max', 'Lou', 'Zed', 'Kit', 'Rex', 'Ivy', 'Bo'];
 const humans = (lobby) => lobby.players.filter(p => !p.isBot);
 
@@ -26,6 +27,7 @@ class LobbyStore {
       createdAt: Date.now(),
       host: playerId,
       settings: { mode: settings.mode || 'standard', timedMinutes: settings.timedMinutes || null },
+      chat: [], // last CHAT_HISTORY messages (SPEC §2.4)
     };
 
     logger.log(`Lobby created: ${lobbyCode}`);
@@ -115,6 +117,18 @@ class LobbyStore {
     lobby.status = 'playing';
     logger.log(`Game started in lobby ${lobbyCode} with ${lobby.players.length} players`);
     return { success: true, players: lobby.players, settings: lobby.settings };
+  }
+
+  /** Append a chat message, keeping the last CHAT_HISTORY. */
+  addChatMessage(lobbyCode, message) {
+    const lobby = this.lobbies[lobbyCode];
+    if (!lobby) return;
+    lobby.chat.push(message);
+    if (lobby.chat.length > CHAT_HISTORY) lobby.chat.splice(0, lobby.chat.length - CHAT_HISTORY);
+  }
+
+  getChat(lobbyCode) {
+    return this.lobbies[lobbyCode]?.chat ?? [];
   }
 
   /** Add a bot to a waiting lobby (SPEC §2.2). */

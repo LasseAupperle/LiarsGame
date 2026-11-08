@@ -4,7 +4,7 @@
 
 import { useState } from 'react';
 import useGame from '../../hooks/useGame';
-import { toast } from '../../store/uiStore';
+import useUIStore, { toast } from '../../store/uiStore';
 
 export default function LobbyJoin({ onBack, initialCode = '' }) {
   const [lobbyCode, setLobbyCode] = useState(initialCode);
@@ -27,6 +27,7 @@ export default function LobbyJoin({ onBack, initialCode = '' }) {
       setGamePlayerName(playerName);
       setPlayerId(response.playerId);
       setSessionToken(response.token);
+      useUIStore.getState().setChat(response.lobbyCode, response.chat);
       setGameCode(response.lobbyCode);
 
       if (response.joinedRunning) {

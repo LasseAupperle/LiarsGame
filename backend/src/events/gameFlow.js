@@ -163,13 +163,17 @@ async function resolveLiarCall(io, lobbyCode, gameEngine, callerId) {
       .filter(p => !p.spectator)
       .map(p => ({ id: p.id, name: p.name, mainScore: p.mainScore })),
   });
-  onLiarResolved(io, lobbyCode, { accused, caller, isLiarCorrect });
+  try {
+    onLiarResolved(io, lobbyCode, { accused, caller, isLiarCorrect });
+  } catch (error) {
+    logger.error('Error in liar-resolved hook', error);
+  }
 
   const gameState = await startNextRoundOrEnd(io, lobbyCode, gameEngine);
   return gameState ? { success: true, gameState } : { success: true };
 }
 
-/** Hook for side effects after a liar call (bot chat lines are attached in chat step). */
+/** Hook for side effects after a liar call (bot chat lines, see chatEvents.js). */
 let onLiarResolved = () => {};
 function setLiarResolvedHook(fn) { onLiarResolved = fn; }
 

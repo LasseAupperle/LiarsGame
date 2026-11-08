@@ -4,6 +4,7 @@ import LobbyPage from './pages/LobbyPage';
 import GamePage from './pages/GamePage';
 import GameWon from './components/Game/GameWon';
 import Toasts from './components/Shared/Toasts';
+import ChatPanel from './components/Shared/ChatPanel';
 import useGlobalGameEvents from './hooks/useGlobalGameEvents';
 import './AppStyles.css';
 import './features.css';
@@ -32,6 +33,7 @@ function App() {
         {status === 'lobby' && <LobbyPage />}
         {(status === 'playing' || status === 'spectating') && <GamePage />}
         <Toasts />
+        <ChatPanel />
         {status === 'won' && winner && (
           <GameWon winner={winner} />
         )}

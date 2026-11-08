@@ -165,6 +165,17 @@ round out and score nothing from it (decided 2026-11-08).
 - The lobby remembers `lastResult` (winner + final scores), included in its view and
   in rejoin responses.
 - A game that ends without a winner (no humans left) closes the lobby as before.
+
+### 2.4 Chat
+- Every player in a lobby or game (including spectators) can send chat messages with
+  `chat:send`; everyone in that lobby receives `chat:message`.
+- Text is trimmed, control characters removed, 1–200 characters. Rate limit: at most
+  5 messages per 10 s per player; extra messages are rejected with a message.
+- The lobby keeps the last 50 messages. They are returned on join and rejoin (`chat`),
+  survive a rematch, and disappear when the lobby closes.
+- Messages are `{ id, playerId, playerName, text, ts, isBot }`. Bots occasionally
+  comment after a liar call they were part of.
+- Chat is plain text; clients must render it as text (never as HTML).
 ---
 
 ## 3. Server-side enforcement
@@ -197,14 +208,15 @@ which receives `{ success: boolean, message?: string, ... }`.
 | Event | Arguments | Success response |
 |---|---|---|
 | `lobby:create` | `playerName, settings{mode, timedMinutes}` | `lobbyCode, playerId, token, players, host` |
-| `lobby:join` | `lobbyCode, playerName` | `lobbyCode, playerId, token, players, host` or `joinedRunning: true` |
+| `lobby:join` | `lobbyCode, playerName` | `lobbyCode, playerId, token, players, host, chat` or `joinedRunning: true` |
 | `lobby:leave` | — (in a running game: leave immediately, see §2.1) | — |
 | `lobby:start` | — (host only) | `gameState, settings, endTime` |
 | `lobby:list` | — | `lobbies[{code, playerCount, maxPlayers, status, roundNumber}]` |
 | `lobby:addBot` | — (host only, waiting lobby) | — (`lobby:updated` follows) |
 | `lobby:removeBot` | `botId` (host only, waiting lobby) | — (`lobby:updated` follows) |
+| `chat:send` | `text` | — (`chat:message` follows) |
 | `game:checkRejoin` | `{lobbyCode, token}` | `{canRejoin}` |
-| `game:rejoin` | `lobbyCode, token` | `playerId` plus — `phase:'lobby'`: `lobbyCode, players, host, settings` · `phase:'game'`: `gameState, hand, settings, endTime` · finished: `{success:false, ended:true, winner}` |
+| `game:rejoin` | `lobbyCode, token` | `playerId, chat` plus — `phase:'lobby'`: `lobbyCode, players, host, settings` · `phase:'game'`: `gameState, hand, settings, endTime` · finished: `{success:false, ended:true, winner}` |
 | `game:play` | `lobbyCode, cardIndices[]` | `gameState` |
 | `game:callLiar` | `lobbyCode` | `gameState` |
 
@@ -219,6 +231,7 @@ which receives `{ success: boolean, message?: string, ... }`.
 | `game:round:noLiar` | `{scores, scoreDeltas}` | lobby |
 | `game:autoPlayed` | `{playerId, playerName}` — server played for a disconnected player | lobby |
 | `game:timeUp` | `{tiebreak, gameState}` | lobby |
+| `chat:message` | `{id, playerId, playerName, text, ts, isBot}` | lobby |
 | `game:won` | `{winnerId, winnerName, finalScore, finalScores[{id, name, mainScore, isBot}], rematch}` | lobby |
 | `player:disconnected` | `{playerId, playerName, timeoutMs}` | lobby |
 | `player:reconnected` | `{playerId}` | lobby |

@@ -44,6 +44,7 @@ function rejoinSession(socket) {
       g.setGameCode(session.gameCode);
       g.setPlayerId(res.playerId);
       g.setSessionToken(session.sessionToken);
+      useUIStore.getState().setChat(session.gameCode, res.chat);
       if (session.playerName) g.setPlayerName(session.playerName);
 
       if (res.phase === 'game') {

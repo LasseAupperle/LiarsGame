@@ -43,8 +43,19 @@ function cardIndices(value, handSize) {
   return new Set(value).size === value.length;
 }
 
+const MAX_CHAT_LENGTH = 200;
+
+/** @returns {string|null} cleaned chat text, or null if invalid (SPEC §2.4) */
+function chatText(value) {
+  if (typeof value !== 'string') return null;
+  // eslint-disable-next-line no-control-regex
+  const text = value.replace(/[\u0000-\u001f\u007f]/g, ' ').trim();
+  if (text.length < 1 || text.length > MAX_CHAT_LENGTH) return null;
+  return text;
+}
+
 function isString(value) {
   return typeof value === 'string' && value.length > 0;
 }
 
-module.exports = { playerName, lobbyCode, gameSettings, cardIndices, isString, MAX_NAME_LENGTH };
+module.exports = { playerName, lobbyCode, gameSettings, cardIndices, chatText, isString, MAX_NAME_LENGTH, MAX_CHAT_LENGTH };

@@ -113,13 +113,13 @@ module.exports = (io) => {
             socket.emit('game:hand', []);
             flow.broadcastState(io, lobbyCode, gameEngine);
           }
-          cb(callback, { success: true, lobbyCode, playerId, token, joinedRunning: true });
+          cb(callback, { success: true, lobbyCode, playerId, token, joinedRunning: true, chat: lobbyStore.getChat(lobbyCode) });
           return;
         }
 
         emitLobbyUpdate(io, lobbyCode);
         const lobby = lobbyStore.getLobby(lobbyCode);
-        cb(callback, { success: true, lobbyCode, playerId, token, players: lobby.players, host: lobby.host });
+        cb(callback, { success: true, lobbyCode, playerId, token, players: lobby.players, host: lobby.host, chat: lobby.chat });
       } catch (error) {
         logger.error('Error joining lobby', error);
         cb(callback, { success: false, message: 'Server error' });
@@ -307,6 +307,7 @@ module.exports = (io) => {
           cb(callback, {
             success: true,
             playerId,
+            chat: lobbyStore.getChat(lobbyCode),
             phase: 'game',
             gameState,
             hand: player.hand,
@@ -322,7 +323,7 @@ module.exports = (io) => {
           attach(socket, lobbyCode, playerId, lobbyPlayer.name);
           lobbyStore.setConnected(lobbyCode, playerId, true);
           emitLobbyUpdate(io, lobbyCode);
-          cb(callback, { success: true, playerId, phase: 'lobby', ...lobbyStore.getLobbyView(lobbyCode) });
+          cb(callback, { success: true, playerId, chat: lobbyStore.getChat(lobbyCode), phase: 'lobby', ...lobbyStore.getLobbyView(lobbyCode) });
           return;
         }
 

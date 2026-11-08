@@ -9,6 +9,7 @@ const cors = require('cors');
 
 const lobbyEvents = require('./events/lobbyEvents');
 const gameEvents = require('./events/gameEvents');
+const chatEvents = require('./events/chatEvents');
 
 /**
  * CORS_ORIGIN: comma-separated list of allowed origins, e.g.
@@ -37,6 +38,7 @@ function createApp({ corsOrigin = process.env.CORS_ORIGIN } = {}) {
 
   lobbyEvents(io);
   gameEvents(io);
+  chatEvents(io);
 
   return { app, server, io };
 }

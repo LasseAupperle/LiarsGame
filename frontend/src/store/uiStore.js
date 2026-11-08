@@ -51,6 +51,28 @@ const useUIStore = create((set) => ({
 
   toggleCardsHidden: () => set((state) => ({ cardsHidden: !state.cardsHidden })),
 
+  // Chat (SPEC §2.4)
+  // Messages belong to chatLobby; a different lobby starts an empty chat.
+  chatMessages: [], // [{ id, playerId, playerName, text, ts, isBot }]
+  chatLobby: null,
+  chatOpen: false,
+  chatUnread: 0,
+  setChat: (lobbyCode, messages) =>
+    set({ chatLobby: lobbyCode, chatMessages: (messages || []).slice(-50), chatUnread: 0 }),
+  addChatMessage: (lobbyCode, message, myId) =>
+    set((state) => {
+      const current = state.chatLobby === lobbyCode ? state.chatMessages : [];
+      if (current.some(m => m.id === message.id)) return {};
+      const unread = !state.chatOpen && message.playerId !== myId ? 1 : 0;
+      return {
+        chatLobby: lobbyCode,
+        chatMessages: [...current, message].slice(-50),
+        chatUnread: (state.chatLobby === lobbyCode ? state.chatUnread : 0) + unread,
+      };
+    }),
+  setChatOpen: (open) => set(open ? { chatOpen: true, chatUnread: 0 } : { chatOpen: false }),
+  clearChat: () => set({ chatMessages: [], chatLobby: null, chatUnread: 0, chatOpen: false }),
+
   // Toasts: non-blocking notifications (replaces alert())
   toasts: [], // [{ id, message, type: 'info' | 'success' | 'error' }]
   showToast: (message, type = 'info', durationMs = 3500) => {

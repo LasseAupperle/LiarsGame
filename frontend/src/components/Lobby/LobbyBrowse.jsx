@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import useGame from '../../hooks/useGame';
-import { toast } from '../../store/uiStore';
+import useUIStore, { toast } from '../../store/uiStore';
 
 const SESSION_KEY = 'lg_session';
 
@@ -61,6 +61,7 @@ export default function LobbyBrowse({ onBack, onJoinWithCode }) {
         setPlayerName(rejoinable.playerName);
         setPlayerId(res.playerId);
         setSessionToken(rejoinable.sessionToken);
+        useUIStore.getState().setChat(rejoinable.gameCode, res.chat);
         setGameCode(rejoinable.gameCode);
         if (res.phase === 'lobby') {
           setPlayers(res.players || []);
