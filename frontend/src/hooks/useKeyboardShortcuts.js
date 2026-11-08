@@ -9,6 +9,7 @@
 import { useEffect } from 'react';
 import useGame from './useGame';
 import useSound from './useSound';
+import { toast } from '../store/uiStore';
 
 const useKeyboardShortcuts = () => {
   const {
@@ -51,7 +52,7 @@ const useKeyboardShortcuts = () => {
           if (response.success) {
             clearSelection();
           } else {
-            alert('Error: ' + response.message);
+            toast(response.message, 'error');
           }
         });
         e.preventDefault();
@@ -62,7 +63,7 @@ const useKeyboardShortcuts = () => {
         playSound('liar-call');
         emit('game:callLiar', gameCode, (response) => {
           if (!response.success) {
-            alert('Error: ' + response.message);
+            toast(response.message, 'error');
           }
         });
         e.preventDefault();
@@ -71,8 +72,9 @@ const useKeyboardShortcuts = () => {
       // C: Copy lobby code
       if (e.key === 'c' || e.key === 'C') {
         if (gameCode) {
-          navigator.clipboard.writeText(gameCode);
-          alert('Lobby code copied!');
+          navigator.clipboard?.writeText(gameCode)
+            .then(() => toast('Lobby code copied', 'success', 2000))
+            .catch(() => toast(`Lobby code: ${gameCode}`, 'info'));
         }
         e.preventDefault();
       }

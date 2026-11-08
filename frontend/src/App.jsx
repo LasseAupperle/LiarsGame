@@ -3,7 +3,9 @@ import ErrorBoundary from './components/ErrorBoundary';
 import LobbyPage from './pages/LobbyPage';
 import GamePage from './pages/GamePage';
 import GameWon from './components/Game/GameWon';
+import Toasts from './components/Shared/Toasts';
 import './AppStyles.css';
+import './features.css';
 
 function App() {
   const { status, connected, winner, gameCode } = useGame();
@@ -27,6 +29,7 @@ function App() {
       <>
         {status === 'lobby' && <LobbyPage />}
         {(status === 'playing' || status === 'spectating') && <GamePage />}
+        <Toasts />
         {status === 'won' && winner && (
           <GameWon
             winnerId={winner.winnerId}

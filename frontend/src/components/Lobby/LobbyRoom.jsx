@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import useGame from '../../hooks/useGame';
+import { toast } from '../../store/uiStore';
 
 const AVATAR_COLORS = ['#6c5ce7', '#00b894', '#e17055', '#0984e3', '#fd79a8', '#fdcb6e'];
 
@@ -75,7 +76,7 @@ export default function LobbyRoom() {
         acceptGameState(response.gameState);
         setStatus('playing');
       } else if (!response.success) {
-        alert('Error starting game: ' + response.message);
+        toast('Could not start: ' + response.message, 'error');
       }
     });
   };

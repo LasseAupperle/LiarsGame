@@ -5,6 +5,7 @@ import Header from '../Shared/Header';
 import NetworkStatus from '../Shared/NetworkStatus';
 import DisconnectBanner from './DisconnectBanner';
 import PokerTable from './PokerTable';
+import { toast } from '../../store/uiStore';
 
 export default function GameBoard() {
   const {
@@ -58,7 +59,11 @@ export default function GameBoard() {
     };
     const handlePlayerDisconnected = (data) => addDisconnectedPlayer(data);
     const handlePlayerReconnected = (data) => removeDisconnectedPlayer(data.playerId);
-    const handlePlayerLeft = (data) => removeDisconnectedPlayer(data.playerId);
+    const handlePlayerLeft = (data) => {
+      removeDisconnectedPlayer(data.playerId);
+      toast(`${data.playerName} left the game`, 'info');
+    };
+    const handleAutoPlayed = (data) => toast(`${data.playerName} is offline — a card was played for them`, 'info');
     const handleTimeUp = (data) => {
       if (data.tiebreak) {
         acceptGameState(data.gameState);
@@ -75,6 +80,7 @@ export default function GameBoard() {
     on('player:reconnected', handlePlayerReconnected);
     on('player:left', handlePlayerLeft);
     on('game:timeUp', handleTimeUp);
+    on('game:autoPlayed', handleAutoPlayed);
 
     return () => {
       off('game:state', handleGameState);
@@ -86,6 +92,7 @@ export default function GameBoard() {
       off('player:reconnected', handlePlayerReconnected);
       off('player:left', handlePlayerLeft);
       off('game:timeUp', handleTimeUp);
+      off('game:autoPlayed', handleAutoPlayed);
     };
   }, [gameCode, acceptGameState, setMyHand, setWinner, setStatus, clearSelection, addDisconnectedPlayer, removeDisconnectedPlayer, setTableDisplay, clearTableDisplay, on, off]);
 

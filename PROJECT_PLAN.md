@@ -69,9 +69,7 @@ frontend/public/         manifest.json, icons/, assets/cards, assets/sounds
 ### UI pass (owner: Lasse)
 - [ ] Show the bonus pot (`gameState.bonus` → `useGame().bonus`).
 - [ ] Spectator view (`players[].spectator`; status `spectating` is never set — decide if needed).
-- [ ] Show disconnected players on their seat (`players[].connected`) and react to
-      `game:autoPlayed`.
-- [ ] Replace `alert()` error popups with in-app toasts.
+- [ ] Show disconnected players on their seat (`players[].connected`).
 - [ ] Remove CSS left over from deleted components in `AppStyles.css`.
 - [ ] Bonus/score reveal: `game:liar:revealed.bonusPaid` is available.
 
@@ -99,6 +97,11 @@ frontend/public/         manifest.json, icons/, assets/cards, assets/sounds
 ---
 
 ## Changelog
+
+### 2026-11-08 (2)
+- **Toasts** replace every `alert()` (`uiStore.showToast` / `toast()`, `components/Shared/Toasts.jsx`);
+  `game:autoPlayed` and `player:left` now show a toast. New feature styles live in
+  `frontend/src/features.css`, separate from `AppStyles.css`.
 
 ### 2026-11-08
 - Added `docs/SPEC.md` (source of truth) and `CLAUDE.md` (spec-first workflow).

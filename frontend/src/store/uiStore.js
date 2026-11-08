@@ -51,6 +51,18 @@ const useUIStore = create((set) => ({
 
   toggleCardsHidden: () => set((state) => ({ cardsHidden: !state.cardsHidden })),
 
+  // Toasts: non-blocking notifications (replaces alert())
+  toasts: [], // [{ id, message, type: 'info' | 'success' | 'error' }]
+  showToast: (message, type = 'info', durationMs = 3500) => {
+    const id = Date.now() + Math.random();
+    set((state) => ({ toasts: [...state.toasts.slice(-3), { id, message, type }] }));
+    setTimeout(() => {
+      set((state) => ({ toasts: state.toasts.filter(t => t.id !== id) }));
+    }, durationMs);
+    return id;
+  },
+  dismissToast: (id) => set((state) => ({ toasts: state.toasts.filter(t => t.id !== id) })),
+
   addDisconnectedPlayer: (player) =>
     set((state) => ({
       disconnectedPlayers: [
@@ -112,3 +124,7 @@ const useUIStore = create((set) => ({
 }));
 
 export default useUIStore;
+
+/** Show a toast from anywhere (also outside React components). */
+export const toast = (message, type = 'info', durationMs) =>
+  useUIStore.getState().showToast(message, type, durationMs);

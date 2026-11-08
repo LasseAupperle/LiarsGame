@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import useGame from '../../hooks/useGame';
+import { toast } from '../../store/uiStore';
 
 const SESSION_KEY = 'lg_session';
 
@@ -73,7 +74,7 @@ export default function LobbyBrowse({ onBack, onJoinWithCode }) {
       } else {
         localStorage.removeItem(SESSION_KEY);
         setRejoinable(null);
-        alert('Could not rejoin: ' + res.message);
+        toast('Could not rejoin: ' + res.message, 'error');
       }
     });
   };

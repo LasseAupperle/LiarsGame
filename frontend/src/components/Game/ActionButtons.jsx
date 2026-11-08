@@ -4,6 +4,7 @@
 
 import useGame from '../../hooks/useGame';
 import useSound from '../../hooks/useSound';
+import { toast } from '../../store/uiStore';
 
 export default function ActionButtons({ onPlay, onLiar }) {
   const {
@@ -20,7 +21,7 @@ export default function ActionButtons({ onPlay, onLiar }) {
 
   const handlePlay = () => {
     if (selectedCards.length === 0 || selectedCards.length > 3) {
-      alert('Select 1-3 cards');
+      toast('Select 1–3 cards', 'info');
       return;
     }
 
@@ -30,7 +31,7 @@ export default function ActionButtons({ onPlay, onLiar }) {
         clearSelection();
         onPlay?.(response);
       } else {
-        alert('Error: ' + response.message);
+        toast(response.message, 'error');
       }
     });
   };
@@ -41,7 +42,7 @@ export default function ActionButtons({ onPlay, onLiar }) {
       if (response.success) {
         onLiar?.(response);
       } else {
-        alert('Error: ' + response.message);
+        toast(response.message, 'error');
       }
     });
   };

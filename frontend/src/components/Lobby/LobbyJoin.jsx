@@ -4,6 +4,7 @@
 
 import { useState } from 'react';
 import useGame from '../../hooks/useGame';
+import { toast } from '../../store/uiStore';
 
 export default function LobbyJoin({ onBack, initialCode = '' }) {
   const [lobbyCode, setLobbyCode] = useState(initialCode);
@@ -19,7 +20,7 @@ export default function LobbyJoin({ onBack, initialCode = '' }) {
     emit('lobby:join', lobbyCode.toUpperCase(), playerName, (response) => {
       setLoading(false);
       if (!response.success) {
-        alert('Error joining lobby: ' + response.message);
+        toast('Could not join: ' + response.message, 'error');
         return;
       }
 

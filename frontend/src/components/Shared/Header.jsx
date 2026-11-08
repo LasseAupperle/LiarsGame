@@ -6,6 +6,7 @@ import useGame from '../../hooks/useGame';
 import useGameStore from '../../store/gameStore';
 import useUIStore from '../../store/uiStore';
 import VolumeControl from './VolumeControl';
+import { toast } from '../../store/uiStore';
 import KeyboardShortcutsHelp from './KeyboardShortcutsHelp';
 
 export default function Header() {
@@ -13,8 +14,9 @@ export default function Header() {
 
   const copyToClipboard = () => {
     if (gameCode) {
-      navigator.clipboard.writeText(gameCode);
-      alert('Lobby code copied!');
+      navigator.clipboard?.writeText(gameCode)
+        .then(() => toast('Lobby code copied', 'success', 2000))
+        .catch(() => toast(`Lobby code: ${gameCode}`, 'info'));
     }
   };
 

@@ -4,6 +4,7 @@
 
 import { useState } from 'react';
 import useGame from '../../hooks/useGame';
+import { toast } from '../../store/uiStore';
 
 export default function LobbyCreate({ onBack }) {
   const [playerName, setPlayerName] = useState('');
@@ -30,7 +31,7 @@ export default function LobbyCreate({ onBack }) {
         setStatus('lobby');
         saveSession();
       } else {
-        alert('Error creating lobby: ' + response.message);
+        toast('Could not create lobby: ' + response.message, 'error');
       }
     });
   };
