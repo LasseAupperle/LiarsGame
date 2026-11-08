@@ -190,7 +190,7 @@ module.exports = (io) => {
         }
 
         const players = lobby.players.map(p => {
-          const player = new Player(p.id, p.name);
+          const player = new Player(p.id, p.name, { isBot: !!p.isBot });
           player.connected = p.connected !== false;
           return player;
         });
@@ -215,7 +215,7 @@ module.exports = (io) => {
 
         const gameState = gameEngine.getGameState();
         io.to(lobbyCode).emit('game:started', { lobbyCode, gameState, settings: startResult.settings, endTime });
-        flow.scheduleAutoPlay(io, lobbyCode, gameEngine);
+        flow.scheduleTurn(io, lobbyCode, gameEngine);
         await flow.emitPrivateHands(io, lobbyCode, gameEngine);
 
         cb(callback, { success: true, gameState, settings: startResult.settings, endTime });
@@ -224,6 +224,26 @@ module.exports = (io) => {
         cb(callback, { success: false, message: 'Server error' });
       }
     });
+
+    // Bots (SPEC §2.2): host only, waiting lobby
+    const hostOnly = (handler) => (...args) => {
+      const callback = typeof args[args.length - 1] === 'function' ? args.pop() : null;
+      try {
+        const { lobbyCode, playerId } = socket.data;
+        const lobby = lobbyCode && lobbyStore.getLobby(lobbyCode);
+        if (!lobby) return cb(callback, { success: false, message: 'Not in a lobby' });
+        if (lobby.host !== playerId) return cb(callback, { success: false, message: 'Only the host can do that' });
+        const result = handler(lobbyCode, ...args);
+        if (result.success) emitLobbyUpdate(io, lobbyCode);
+        cb(callback, result);
+      } catch (error) {
+        logger.error('Error in host action', error);
+        cb(callback, { success: false, message: 'Server error' });
+      }
+    };
+
+    socket.on('lobby:addBot', hostOnly((lobbyCode) => lobbyStore.addBot(lobbyCode)));
+    socket.on('lobby:removeBot', hostOnly((lobbyCode, botId) => lobbyStore.removeBot(lobbyCode, botId)));
 
     socket.on('lobby:list', (callback) => {
       try {

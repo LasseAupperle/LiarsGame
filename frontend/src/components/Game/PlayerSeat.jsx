@@ -6,7 +6,7 @@ export default function PlayerSeat({ player, position = 'top', turnIndex }) {
   const { currentPlayerId, playerId: myId, disconnectedPlayers } = useGame();
   const isActive = player.id === currentPlayerId;
   const isMe = player.id === myId;
-  const isDisconnected = disconnectedPlayers.some(d => d.playerId === player.id);
+  const isDisconnected = player.connected === false || disconnectedPlayers.some(d => d.playerId === player.id);
   const cardsLeft = player.cardsLeft ?? player.hand?.length ?? 0;
   const isVertical = position === 'left' || position === 'right';
 

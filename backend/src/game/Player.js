@@ -3,9 +3,10 @@
  */
 
 class Player {
-  constructor(id, name) {
+  constructor(id, name, { isBot = false } = {}) {
     this.id = id;
     this.name = name;
+    this.isBot = isBot;          // Server-controlled player (SPEC §2.2)
     this.hand = [];              // Cards in hand
     this.mainScore = 0;          // Primary score (round wins)
     this.spectator = false;      // True if in tie-break and not top scorer
@@ -52,6 +53,7 @@ class Player {
     return {
       id: this.id,
       name: this.name,
+      isBot: this.isBot,
       mainScore: this.mainScore,
       spectator: this.spectator,
       connected: this.connected,

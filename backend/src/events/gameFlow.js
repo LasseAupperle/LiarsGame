@@ -9,6 +9,7 @@ const lobbyStore = require('../store/lobbyStore');
 const presenceStore = require('../store/presenceStore');
 const config = require('../config');
 const logger = require('../utils/logger');
+const BotBrain = require('../game/BotBrain');
 
 const turnTimers = {};    // lobbyCode -> auto-play timeout
 const gameTimers = {};    // lobbyCode -> timed-mode countdown
@@ -31,7 +32,7 @@ async function emitPrivateHands(io, lobbyCode, gameEngine) {
 function broadcastState(io, lobbyCode, gameEngine) {
   const state = gameEngine.getGameState();
   io.to(lobbyCode).emit('game:state', state);
-  scheduleAutoPlay(io, lobbyCode, gameEngine);
+  scheduleTurn(io, lobbyCode, gameEngine);
   return state;
 }
 
@@ -100,21 +101,103 @@ async function afterPlay(io, lobbyCode, gameEngine) {
   return broadcastState(io, lobbyCode, gameEngine);
 }
 
-/** If the current player is disconnected, auto-play one random card for them later. */
-function scheduleAutoPlay(io, lobbyCode, gameEngine) {
+/**
+ * Resolve a liar call by callerId: reveal, score, then next round or game end.
+ * @returns {Promise<{ success, message?, gameState? }>}
+ */
+async function resolveLiarCall(io, lobbyCode, gameEngine, callerId) {
+  const result = gameEngine.callLiar(callerId);
+  if (!result.success) return result;
+
+  const { truthful, isLiarCorrect, cardsPlayed, scoreDeltas, accusedId, bonusPaid } = result.result;
+  const accused = gameEngine.players.find(p => p.id === accusedId);
+  const caller = gameEngine.players.find(p => p.id === callerId);
+
+  io.to(lobbyCode).emit('game:liar:revealed', {
+    truthful,
+    isLiarCorrect,
+    cardsPlayed,
+    accusedName: accused?.name,
+    callerName: caller?.name,
+    scoreDeltas,
+    bonusPaid,
+    scores: gameEngine.players
+      .filter(p => !p.spectator)
+      .map(p => ({ id: p.id, name: p.name, mainScore: p.mainScore })),
+  });
+  onLiarResolved(io, lobbyCode, { accused, caller, isLiarCorrect });
+
+  const gameState = await startNextRoundOrEnd(io, lobbyCode, gameEngine);
+  return gameState ? { success: true, gameState } : { success: true };
+}
+
+/** Hook for side effects after a liar call (bot chat lines are attached in chat step). */
+let onLiarResolved = () => {};
+function setLiarResolvedHook(fn) { onLiarResolved = fn; }
+
+/** Make a bot take its turn (SPEC §2.2). */
+async function botTurn(io, lobbyCode, gameEngine, bot) {
+  const decision = BotBrain.decide({
+    hand: bot.hand,
+    myPlayed: gameEngine.playedThisRound[bot.id] || [],
+    tableCard: gameEngine.winningCard,
+    playHistory: gameEngine.playHistory,
+    botId: bot.id,
+    bonus: gameEngine.bonus,
+  });
+
+  if (decision.action === 'liar') {
+    const res = await resolveLiarCall(io, lobbyCode, gameEngine, bot.id);
+    if (res.success) return;
+    // Not allowed (e.g. no play to call): fall through and play instead
+  }
+
+  const indices = decision.action === 'play'
+    ? decision.indices
+    : BotBrain.choosePlay(bot.hand, gameEngine.winningCard, Math.random);
+  const result = gameEngine.playTurn(bot.id, indices);
+  if (!result.success) {
+    logger.error(`Bot ${bot.name} made an invalid play: ${result.message}`);
+    gameEngine.playTurn(bot.id, [0]); // never stall the game
+  }
+  await afterPlay(io, lobbyCode, gameEngine);
+}
+
+/**
+ * Arm the turn timer for the current player:
+ * - bot → act after a think delay;
+ * - disconnected human → auto-play one random card after AUTO_PLAY_MS (SPEC §2.1);
+ * - connected human → no timer.
+ */
+function scheduleTurn(io, lobbyCode, gameEngine) {
   clearTimeout(turnTimers[lobbyCode]);
   delete turnTimers[lobbyCode];
 
   const currentId = gameEngine.turnOrder[gameEngine.currentPlayerIndex];
   const player = gameEngine.players.find(p => p.id === currentId);
-  if (!player || player.connected || player.hand.length === 0) return;
+  if (!player || player.hand.length === 0) return;
+  if (!player.isBot && player.connected) return;
+
+  const delay = player.isBot
+    ? config.BOT_MIN_MS + Math.random() * (config.BOT_MAX_MS - config.BOT_MIN_MS)
+    : config.AUTO_PLAY_MS;
+  const round = gameEngine.roundNumber;
+  const turn = gameEngine.playHistory.length;
 
   turnTimers[lobbyCode] = unref(setTimeout(async () => {
     delete turnTimers[lobbyCode];
     try {
       if (sessionStore.getSession(lobbyCode) !== gameEngine) return;
-      if (gameEngine.turnOrder[gameEngine.currentPlayerIndex] !== currentId || player.connected) return;
+      // State moved on (someone else acted / round changed): a newer timer is in charge
+      if (gameEngine.turnOrder[gameEngine.currentPlayerIndex] !== currentId) return;
+      if (gameEngine.roundNumber !== round || gameEngine.playHistory.length !== turn) return;
       if (player.hand.length === 0) return;
+
+      if (player.isBot) {
+        await botTurn(io, lobbyCode, gameEngine, player);
+        return;
+      }
+      if (player.connected) return;
 
       const index = Math.floor(Math.random() * player.hand.length);
       const result = gameEngine.playTurn(currentId, [index]);
@@ -124,9 +207,9 @@ function scheduleAutoPlay(io, lobbyCode, gameEngine) {
       io.to(lobbyCode).emit('game:autoPlayed', { playerId: currentId, playerName: player.name });
       await afterPlay(io, lobbyCode, gameEngine);
     } catch (error) {
-      logger.error('Error auto-playing', error);
+      logger.error('Error in turn timer', error);
     }
-  }, config.AUTO_PLAY_MS));
+  }, delay));
 }
 
 /** Remove a player from a running game (grace expired or left) — SPEC §2.1. */
@@ -139,6 +222,12 @@ async function removeFromGame(io, lobbyCode, gameEngine, playerId) {
   const lobby = lobbyStore.getLobby(lobbyCode);
   if (lobby) lobby.players = lobby.players.filter(p => p.id !== playerId);
   io.to(lobbyCode).emit('player:left', { playerId, playerName: player.name });
+
+  // No humans left: close the game, bots don't play on alone (SPEC §2.2)
+  if (!gameEngine.players.some(p => !p.isBot && !p.left)) {
+    endGame(io, lobbyCode, gameEngine, null);
+    return;
+  }
 
   if (gameEngine.turnOrder.length <= 1) {
     const winner = gameEngine.players.find(p => p.id === gameEngine.turnOrder[0]);
@@ -189,7 +278,9 @@ module.exports = {
   getFinishedGame,
   startNextRoundOrEnd,
   afterPlay,
-  scheduleAutoPlay,
+  scheduleTurn,
+  resolveLiarCall,
+  setLiarResolvedHook,
   removeFromGame,
   startGameTimer,
 };

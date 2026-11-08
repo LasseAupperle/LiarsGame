@@ -87,9 +87,10 @@ round out and score nothing from it (decided 2026-11-08).
   case-insensitive on input.
 - Player name: trimmed, 1–20 characters, unique within the lobby (case-insensitive).
   Applies to joining a waiting lobby and joining a running game.
-- The creator is the host. If the host leaves a waiting lobby, the next player in
-  join order becomes host. Only the host can start; start requires 2–4 players.
-- A lobby with no players is deleted.
+- The creator is the host. The host is always a human. If the host leaves a waiting
+  lobby, the next human in join order becomes host. Only the host can start; start
+  requires 2–4 players (bots count).
+- A lobby with no human players left is deleted (bots alone never keep it alive).
 - **Joining a running game:** allowed while fewer than 4 players. The new player
   sits out the current round (no cards) and is dealt in from the next round.
 - All state is in memory; a server restart ends every game.
@@ -131,6 +132,24 @@ round out and score nothing from it (decided 2026-11-08).
   and on app load when a stored session exists, call `game:rejoin` automatically.
   On failure, clear the stored session and return to the main menu.
 
+
+### 2.2 Bots
+- The host can add bots to a **waiting** lobby (`lobby:addBot`) while it has fewer than
+  4 players, and remove them (`lobby:removeBot`). This enables solo play (1 human +
+  1–3 bots) and filling up a half-empty table.
+- Bots get distinct names from a fixed list (e.g. "Ada (bot)"), have `isBot: true`
+  in lobby and game state, are always `connected`, and never time out.
+- A human joining a **full waiting** lobby that contains a bot takes the most recently
+  added bot's seat. Running games can't be joined when full.
+- On its turn a bot acts after a short think delay (1–2.5 s). It plays by the same
+  rules as everyone, using only information a human in its seat would have (its own
+  hand and plays, the public history and scores). Strategy: play matching cards
+  truthfully when it has them, sometimes bluffs, must bluff without them; calls liar
+  when the odds, from counting matching cards, make a call worthwhile, weighing in
+  the bonus pot.
+- If no human remains in a running game (all left or removed), the game ends with no
+  winner and the lobby is closed.
+
 ---
 
 ## 3. Server-side enforcement
@@ -167,6 +186,8 @@ which receives `{ success: boolean, message?: string, ... }`.
 | `lobby:leave` | — (in a running game: leave immediately, see §2.1) | — |
 | `lobby:start` | — (host only) | `gameState, settings, endTime` |
 | `lobby:list` | — | `lobbies[{code, playerCount, maxPlayers, status, roundNumber}]` |
+| `lobby:addBot` | — (host only, waiting lobby) | — (`lobby:updated` follows) |
+| `lobby:removeBot` | `botId` (host only, waiting lobby) | — (`lobby:updated` follows) |
 | `game:checkRejoin` | `{lobbyCode, token}` | `{canRejoin}` |
 | `game:rejoin` | `lobbyCode, token` | `playerId` plus — `phase:'lobby'`: `lobbyCode, players, host, settings` · `phase:'game'`: `gameState, hand, settings, endTime` · finished: `{success:false, ended:true, winner}` |
 | `game:play` | `lobbyCode, cardIndices[]` | `gameState` |
@@ -175,7 +196,7 @@ which receives `{ success: boolean, message?: string, ... }`.
 ### 4.2 Server → client
 | Event | Payload | Audience |
 |---|---|---|
-| `lobby:updated` | `{lobbyCode, host, players[{id, name, connected}]}` | lobby |
+| `lobby:updated` | `{lobbyCode, host, settings, players[{id, name, connected, isBot}]}` | lobby |
 | `game:started` | `{lobbyCode, gameState, settings, endTime}` | lobby |
 | `game:state` | `gameState` (see 4.3) | lobby |
 | `game:hand` | `number[]` (own hand only) | single player |
@@ -197,7 +218,7 @@ which receives `{ success: boolean, message?: string, ... }`.
   roundNumber, winningCard, currentPlayerId, turnOrder, settings,
   playHistory: [{ playerId, playerName, cardsPlayed, claim }],
   bonus,                       // shared bonus pot (§1.6)
-  players: [{ id, name, mainScore, spectator, connected, cardsLeft, cardsPlayedCount }]
+  players: [{ id, name, isBot, mainScore, spectator, connected, cardsLeft, cardsPlayedCount }]
 }
 ```
 Hands are never included in `gameState`; each player receives only their own hand

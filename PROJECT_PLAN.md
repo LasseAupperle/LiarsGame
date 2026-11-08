@@ -30,7 +30,9 @@ backend/src/
   game/                  pure game logic — Deck, Player, rules, GameEngine
   events/lobbyEvents.js  create/join/leave/start/list, presence, rejoin
   events/gameEvents.js   game:play, game:callLiar
-  events/gameFlow.js     shared progression: round end, victory, auto-play, removal, timed mode
+  events/gameFlow.js     shared progression: liar resolution, round end, victory, turn timer
+                         (bots + disconnected auto-play), removal, timed mode
+  game/BotBrain.js       bot decisions (pure, unit-tested)
   store/                 lobbyStore, sessionStore (GameEngine per lobby), presenceStore
   utils/                 validate, logger, generateLobbyCode
 backend/test/            rules/engine unit tests, socket + presence integration tests
@@ -60,7 +62,8 @@ frontend/public/         manifest.json, icons/, assets/cards, assets/sounds
   auto-play for a disconnected current player, late-rejoin sees the result (SPEC §2.1).
 - Poker-table UI with card art, sounds + volume, keyboard shortcuts, card hiding, rules modal.
 - PWA installable (manifest + icons + service worker).
-- 38 backend tests; CI on every push.
+- Bots for solo play / filling a table.
+- Backend tests (unit, socket integration, presence, bots incl. a full solo game); CI on every push.
 
 ---
 
@@ -108,6 +111,12 @@ frontend/public/         manifest.json, icons/, assets/cards, assets/sounds
   and see their hand. Create/join now return a separate secret `token`; rejoin and
   checkRejoin take the token. Leaving on purpose invalidates it. Old stored sessions (without
   a token) simply go back to the menu.
+- **Bots** (SPEC §2.2): host adds/removes bots in a waiting lobby (🤖 slot / × in the lobby
+  room) for solo play or to fill a table; a human joining a full lobby takes a bot's seat.
+  `game/BotBrain.js` decides moves from what the bot's seat can know (card counting odds,
+  bonus-weighted liar calls, occasional bluffs); bots act after 1–2.5 s. Host is always a
+  human (UI now uses the server's `host`, not `players[0]`); a game with no humans left ends.
+  `events/gameFlow.js` now owns liar resolution and the unified turn timer (`scheduleTurn`).
 
 ### 2026-11-08
 - Added `docs/SPEC.md` (source of truth) and `CLAUDE.md` (spec-first workflow).

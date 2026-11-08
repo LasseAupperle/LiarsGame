@@ -9,7 +9,7 @@ export default function LobbyBrowse({ onBack, onJoinWithCode }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [rejoinable, setRejoinable] = useState(null); // stored session { gameCode, sessionToken, playerName } | null
-  const { emit, connected, setPlayerId, setSessionToken, setPlayerName, setGameCode, acceptGameState, setStatus, setMyHand, saveSession, setPlayers, setGameSettings } = useGame();
+  const { emit, connected, setPlayerId, setSessionToken, setPlayerName, setGameCode, acceptGameState, setStatus, setMyHand, saveSession, setPlayers, setGameSettings, setHostId } = useGame();
   const timeoutRef = useRef(null);
 
   const fetchLobbies = () => {
@@ -64,6 +64,7 @@ export default function LobbyBrowse({ onBack, onJoinWithCode }) {
         setGameCode(rejoinable.gameCode);
         if (res.phase === 'lobby') {
           setPlayers(res.players || []);
+          setHostId(res.host || null);
           setStatus('lobby');
         } else {
           acceptGameState(res.gameState);

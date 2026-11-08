@@ -53,6 +53,7 @@ function rejoinSession(socket) {
         g.setStatus('playing');
       } else {
         g.setPlayers(res.players || []);
+        g.setHostId(res.host || null);
         if (res.settings) g.setGameSettings(res.settings);
         g.setStatus('lobby');
       }

@@ -64,31 +64,8 @@ module.exports = (io) => {
         }
         const { gameEngine, playerId, lobbyCode } = ctx;
 
-        const result = gameEngine.callLiar(playerId);
-        if (!result.success) {
-          cb(callback, result);
-          return;
-        }
-
-        const { truthful, isLiarCorrect, cardsPlayed, scoreDeltas, accusedId, bonusPaid } = result.result;
-        const accusedPlayer = gameEngine.players.find(p => p.id === accusedId);
-        const callerPlayer = gameEngine.players.find(p => p.id === playerId);
-
-        io.to(lobbyCode).emit('game:liar:revealed', {
-          truthful,
-          isLiarCorrect,
-          cardsPlayed,
-          accusedName: accusedPlayer?.name,
-          callerName: callerPlayer?.name,
-          scoreDeltas,
-          bonusPaid,
-          scores: gameEngine.players
-            .filter(p => !p.spectator)
-            .map(p => ({ id: p.id, name: p.name, mainScore: p.mainScore }))
-        });
-
-        const gameState = await flow.startNextRoundOrEnd(io, lobbyCode, gameEngine);
-        cb(callback, gameState ? { success: true, gameState } : { success: true });
+        const result = await flow.resolveLiarCall(io, lobbyCode, gameEngine, playerId);
+        cb(callback, result);
       } catch (error) {
         logger.error('Error calling liar', error);
         cb(callback, { success: false, message: 'Server error' });

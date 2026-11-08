@@ -28,6 +28,7 @@ class GameEngine {
     this.playHistory = []; // { playerId, playerName, cardsPlayed: N, claim: "3 Kings" }
     this.roundPlays = {}; // { playerId: { cardsPlayed[], truthful: bool } }
     this.participants = new Set(); // ids dealt into the current round (SPEC §1.2)
+    this.playedThisRound = {}; // { playerId: number[] } every card each player played this round
     this.deck = null;
     this.settings = {
       mode: settings.mode || 'standard', // standard | short | timed
@@ -69,6 +70,7 @@ class GameEngine {
     this.currentPlayerIndex = 0;
 
     this.roundPlays = {};
+    this.playedThisRound = {};
     this.playHistory = [];
   }
 
@@ -111,6 +113,7 @@ class GameEngine {
         cardsPlayed: playedCards,
         truthful
       };
+      this.playedThisRound[playerId] = [...(this.playedThisRound[playerId] || []), ...playedCards];
 
       const claimName = `${playedCards.length} ${Deck.getCardName(this.winningCard)}${playedCards.length > 1 ? 's' : ''}`;
       this.playHistory.push({

@@ -17,6 +17,8 @@ export default function LobbyRoom() {
     gameCode,
     playerId,
     players,
+    hostId,
+    setHostId,
     setPlayers,
     setStatus,
     acceptGameState,
@@ -39,6 +41,7 @@ export default function LobbyRoom() {
     const handleLobbyUpdate = (data) => {
       if (data.lobbyCode === gameCode) {
         setPlayers(data.players);
+        if (data.host) setHostId(data.host);
       }
     };
 
@@ -63,12 +66,26 @@ export default function LobbyRoom() {
       off('game:started', handleGameStart);
       off('game:hand', handleHand);
     };
-  }, [connected, gameCode, setPlayers, setStatus, acceptGameState, setMyHand, on, off]);
+  }, [connected, gameCode, setPlayers, setHostId, setStatus, acceptGameState, setMyHand, on, off]);
+
+  const hostPlayerId = hostId ?? players.find(p => !p.isBot)?.id;
+  const isHost = hostPlayerId === playerId;
 
   useEffect(() => {
-    const isHost = players.length > 0 && players[0].id === playerId;
     setCanStart(isHost && players.length >= 2 && players.length <= 4);
-  }, [players, playerId]);
+  }, [players, isHost]);
+
+  const handleAddBot = () => {
+    emit('lobby:addBot', (res) => {
+      if (!res?.success) toast(res?.message || 'Could not add bot', 'error');
+    });
+  };
+
+  const handleRemoveBot = (botId) => {
+    emit('lobby:removeBot', botId, (res) => {
+      if (!res?.success) toast(res?.message || 'Could not remove bot', 'error');
+    });
+  };
 
   const handleStartGame = () => {
     emit('lobby:start', (response) => {
@@ -97,8 +114,6 @@ export default function LobbyRoom() {
     });
   };
 
-  const isHost = players.length > 0 && players[0].id === playerId;
-
   const modeBadgeText = gameSettings?.mode === 'short'
     ? 'Short Game — 10 pts'
     : gameSettings?.mode === 'timed'
@@ -121,32 +136,49 @@ export default function LobbyRoom() {
       <div className="lobby-players-section">
         <h3>Players ({players.length}/4)</h3>
         <div className="lobby-avatars">
-          {players.map((player, index) => (
-            <div key={player.id} className="player-avatar-wrap">
-              {index === 0 && <span className="host-crown">👑</span>}
+          {players.map((player) => (
+            <div key={player.id} className={`player-avatar-wrap${player.connected === false ? ' avatar-offline' : ''}`}>
+              {player.id === hostPlayerId && <span className="host-crown">👑</span>}
+              {isHost && player.isBot && (
+                <button className="bot-remove" onClick={() => handleRemoveBot(player.id)} title={`Remove ${player.name}`} aria-label={`Remove ${player.name}`}>×</button>
+              )}
               <div
-                className="player-avatar"
+                className={`player-avatar${player.isBot ? ' player-avatar-bot' : ''}`}
                 style={{ backgroundColor: getAvatarColor(player.name) }}
               >
-                {getInitials(player.name)}
+                {player.isBot ? '🤖' : getInitials(player.name)}
               </div>
               <span className="avatar-name">
                 {player.name}
                 {player.id === playerId && ' (You)'}
+                {player.connected === false && ' ⚡'}
               </span>
             </div>
           ))}
           {Array.from({ length: 4 - players.length }).map((_, i) => (
             <div key={`empty-${i}`} className="player-avatar-wrap">
-              <div className="player-avatar player-avatar-empty">+</div>
-              <span className="avatar-name">Waiting...</span>
+              {isHost && i === 0 ? (
+                <>
+                  <button className="player-avatar player-avatar-empty add-bot-slot" onClick={handleAddBot} title="Add a bot">🤖</button>
+                  <span className="avatar-name">Add bot</span>
+                </>
+              ) : (
+                <>
+                  <div className="player-avatar player-avatar-empty">+</div>
+                  <span className="avatar-name">Waiting...</span>
+                </>
+              )}
             </div>
           ))}
         </div>
       </div>
 
       <div className="lobby-status">
-        {players.length < 2 && <p className="waiting-text">Need at least 2 players to start</p>}
+        {players.length < 2 && (
+          <p className="waiting-text">
+            Need at least 2 players to start{isHost ? ' — share the code or add a bot' : ''}
+          </p>
+        )}
         {players.length >= 2 && !isHost && <p className="waiting-text">Waiting for host to start...</p>}
       </div>
 

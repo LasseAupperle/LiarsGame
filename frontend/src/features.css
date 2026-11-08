@@ -39,3 +39,31 @@
 @media (prefers-reduced-motion: reduce) {
   .toast { animation: none; }
 }
+
+/* ---------- Bots (lobby) ---------- */
+.player-avatar-wrap { position: relative; }
+.player-avatar-bot { font-size: 1.4rem; }
+.add-bot-slot {
+  cursor: pointer;
+  font-size: 1.3rem;
+  padding: 0;
+  border-style: dashed;
+}
+.add-bot-slot:hover { border-color: var(--accent); }
+.bot-remove {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border-radius: 50%;
+  border: none;
+  background: var(--red);
+  color: #fff;
+  font-size: 14px;
+  line-height: 22px;
+  z-index: 2;
+  cursor: pointer;
+}
+.avatar-offline .player-avatar { opacity: 0.45; }

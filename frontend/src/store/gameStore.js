@@ -16,6 +16,7 @@ const useGameStore = create((set, get) => ({
 
   // Players & their data
   players: [],
+  hostId: null, // lobby host (always a human)
 
   // Round state
   winningCard: null,
@@ -44,6 +45,7 @@ const useGameStore = create((set, get) => ({
   setPlayerName: (name) => set({ playerName: name }),
   setStatus: (status) => set({ status }),
   setPlayers: (players) => set({ players }),
+  setHostId: (hostId) => set({ hostId }),
   setWinningCard: (card) => set({ winningCard: card }),
   setCurrentPlayerId: (id) => set({ currentPlayerId: id }),
   setRoundNumber: (num) => set({ roundNumber: num }),
@@ -94,6 +96,7 @@ const useGameStore = create((set, get) => ({
       playerName: null,
       status: 'lobby',
       players: [],
+      hostId: null,
       winningCard: null,
       currentPlayerId: null,
       turnOrder: [],
