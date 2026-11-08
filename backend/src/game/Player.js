@@ -29,8 +29,13 @@ class Player {
   }
 
   removeCards(cardIndices) {
-    // Sort indices in reverse to avoid shifting issues
-    const sorted = cardIndices.sort((a, b) => b - a);
+    // Validate everything first so a bad request never leaves the hand half-modified
+    const valid = cardIndices.every(i => Number.isInteger(i) && i >= 0 && i < this.hand.length);
+    if (!valid || new Set(cardIndices).size !== cardIndices.length) {
+      throw new Error('Invalid card index');
+    }
+    // Remove in descending order to avoid index shifting; don't mutate the caller's array
+    const sorted = [...cardIndices].sort((a, b) => b - a);
     return sorted.map(idx => this.removeCard(idx));
   }
 

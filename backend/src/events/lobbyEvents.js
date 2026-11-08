@@ -9,6 +9,7 @@ const sessionStore = require('../store/sessionStore');
 const GameEngine = require('../game/GameEngine');
 const Player = require('../game/Player');
 const logger = require('../utils/logger');
+const validate = require('../utils/validate');
 
 const cb = (callback, data) => {
   if (typeof callback === 'function') callback(data);
@@ -34,12 +35,25 @@ module.exports = (io) => {
   io.on('connection', (socket) => {
     logger.log(`User connected: ${socket.id}`);
 
-    socket.on('lobby:create', (playerName, settings, callback) => {
+    socket.on('lobby:create', (rawName, rawSettings, callback) => {
       // Support old clients that omit settings
-      if (typeof settings === 'function') { callback = settings; settings = {}; }
+      if (typeof rawSettings === 'function') { callback = rawSettings; rawSettings = {}; }
       try {
+        const playerName = validate.playerName(rawName);
+        if (!playerName) {
+          cb(callback, { success: false, message: `Name must be 1-${validate.MAX_NAME_LENGTH} characters` });
+          return;
+        }
+        const settings = validate.gameSettings(rawSettings);
+        if (!settings) {
+          cb(callback, { success: false, message: 'Invalid game settings' });
+          return;
+        }
+
         const playerId = uuidv4();
-        const lobbyCode = generateLobbyCode();
+        // Codes must be unique among live lobbies (SPEC §2)
+        let lobbyCode;
+        do { lobbyCode = generateLobbyCode(); } while (lobbyStore.getLobby(lobbyCode));
 
         const result = lobbyStore.createLobby(lobbyCode, playerName, playerId, settings);
         if (!result.success) {
@@ -70,45 +84,56 @@ module.exports = (io) => {
       }
     });
 
-    socket.on('lobby:join', async (lobbyCode, playerName, callback) => {
+    socket.on('lobby:join', async (rawCode, rawName, callback) => {
       try {
+        const lobbyCode = validate.lobbyCode(rawCode);
+        if (!lobbyCode) {
+          cb(callback, { success: false, message: 'Invalid lobby code' });
+          return;
+        }
+        const playerName = validate.playerName(rawName);
+        if (!playerName) {
+          cb(callback, { success: false, message: `Name must be 1-${validate.MAX_NAME_LENGTH} characters` });
+          return;
+        }
+
         const playerId = uuidv4();
-        const result = lobbyStore.joinLobby(lobbyCode.toUpperCase(), playerName, playerId);
+        const result = lobbyStore.joinLobby(lobbyCode, playerName, playerId);
 
         if (!result.success) {
           cb(callback, { success: false, message: result.message });
           return;
         }
 
-        socket.join(lobbyCode.toUpperCase());
-        socket.data.lobbyCode = lobbyCode.toUpperCase();
+        socket.join(lobbyCode);
+        socket.data.lobbyCode = lobbyCode;
         socket.data.playerId = playerId;
         socket.data.playerName = playerName;
 
         if (result.joinedRunning) {
           // Mid-game join — add player to GameEngine
-          const gameEngine = sessionStore.getSession(lobbyCode.toUpperCase());
+          const gameEngine = sessionStore.getSession(lobbyCode);
           if (gameEngine) {
             const newPlayer = new Player(playerId, playerName);
             gameEngine.players.push(newPlayer);
             const gameState = gameEngine.getGameState();
             socket.emit('game:state', gameState);
             socket.emit('game:hand', []);
-            io.to(lobbyCode.toUpperCase()).emit('game:state', gameState);
+            io.to(lobbyCode).emit('game:state', gameState);
           }
-          cb(callback, { success: true, lobbyCode: lobbyCode.toUpperCase(), playerId, joinedRunning: true });
+          cb(callback, { success: true, lobbyCode: lobbyCode, playerId, joinedRunning: true });
           return;
         }
 
-        const lobby = lobbyStore.getLobby(lobbyCode.toUpperCase());
-        io.to(lobbyCode.toUpperCase()).emit('lobby:updated', {
-          lobbyCode: lobbyCode.toUpperCase(),
+        const lobby = lobbyStore.getLobby(lobbyCode);
+        io.to(lobbyCode).emit('lobby:updated', {
+          lobbyCode: lobbyCode,
           players: lobby.players
         });
 
         cb(callback, {
           success: true,
-          lobbyCode: lobbyCode.toUpperCase(),
+          lobbyCode: lobbyCode,
           playerId,
           players: lobby.players
         });
@@ -230,8 +255,14 @@ module.exports = (io) => {
       }
     });
 
-    socket.on('game:checkRejoin', ({ lobbyCode, playerId }, callback) => {
+    socket.on('game:checkRejoin', (payload, callback) => {
       try {
+        const lobbyCode = validate.lobbyCode(payload?.lobbyCode);
+        const playerId = payload?.playerId;
+        if (!lobbyCode || !validate.isString(playerId)) {
+          cb(callback, { canRejoin: false });
+          return;
+        }
         const inTimer = !!disconnectTimers[playerId];
         const engine = sessionStore.getSession(lobbyCode);
         const player = engine?.players.find(p => p.id === playerId && !p.spectator);
@@ -241,8 +272,13 @@ module.exports = (io) => {
       }
     });
 
-    socket.on('game:rejoin', (lobbyCode, playerId, callback) => {
+    socket.on('game:rejoin', (rawCode, playerId, callback) => {
       try {
+        const lobbyCode = validate.lobbyCode(rawCode);
+        if (!lobbyCode || !validate.isString(playerId)) {
+          cb(callback, { success: false, message: 'Invalid rejoin request' });
+          return;
+        }
         const gameEngine = sessionStore.getSession(lobbyCode);
         if (!gameEngine) {
           cb(callback, { success: false, message: 'Game no longer active' });
@@ -274,6 +310,7 @@ module.exports = (io) => {
         socket.join(lobbyCode);
         socket.data.lobbyCode = lobbyCode;
         socket.data.playerId = playerId;
+        socket.data.playerName = player?.name;
 
         const gameState = gameEngine.getGameState();
         socket.emit('game:state', gameState);

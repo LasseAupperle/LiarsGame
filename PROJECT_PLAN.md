@@ -2,6 +2,9 @@
 
 **IMPORTANT: Keep this file up to date as work progresses. Update status after every session.**
 
+> Rules, server behaviour and the socket protocol live in **[docs/SPEC.md](docs/SPEC.md)** (source of truth).
+> Every change goes spec → code → this plan. See `CLAUDE.md`.
+
 ---
 
 ## Project Overview
@@ -180,3 +183,19 @@ LiarsGame/
 - **Netlify** auto-deploys on every push to main. Frontend changes go live automatically.
 - **Render** does NOT auto-deploy despite "On Commit" setting. After any backend change: go to Render dashboard → manual deploy.
 - In-memory store: restarting Render clears all active sessions and lobbies.
+
+---
+
+## Changelog
+
+### 2026-11-08
+- Added `docs/SPEC.md` (source of truth) and `CLAUDE.md` (spec-first workflow).
+- **Server-side rule enforcement** (SPEC §3):
+  - Removed the unauthenticated `game:nextTurn` event (let anyone skip anyone's turn).
+  - `game:callLiar`: only the current player may call; spectators can't.
+  - `game:play`: card indices must be 1–3 distinct valid integers, checked before the hand
+    is touched (bad requests used to silently delete cards); spectators can't play.
+  - Game events must target the socket's own lobby.
+  - Validation of names (trimmed, 1–20 chars), lobby codes, game settings, rejoin payloads.
+  - Lobby codes are guaranteed unique.
+  - Rejoin restores `socket.data.playerName` (disconnect notices showed `undefined`).

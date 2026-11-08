@@ -6,6 +6,7 @@ const Deck = require('./Deck');
 const Player = require('./Player');
 const { isTruthful, calculateScoreChange, shouldEnterTiebreak, getActivePlayers, getWinner } = require('./rules');
 const logger = require('../utils/logger');
+const { cardIndices: isValidCardIndices } = require('../utils/validate');
 
 class GameEngine {
   constructor(players, settings = {}) {
@@ -74,8 +75,16 @@ class GameEngine {
       return { success: false, message: 'Player not found' };
     }
 
+    if (player.spectator) {
+      return { success: false, message: 'Spectators cannot play' };
+    }
+
     if (playerId !== this.turnOrder[this.currentPlayerIndex]) {
       return { success: false, message: 'Not your turn' };
+    }
+
+    if (!isValidCardIndices(cardsPlayed, player.hand.length)) {
+      return { success: false, message: 'Invalid card selection' };
     }
 
     try {
@@ -130,6 +139,15 @@ class GameEngine {
 
     if (!accusedPlayer || !caller) {
       return { success: false, message: 'Player not found' };
+    }
+
+    if (caller.spectator) {
+      return { success: false, message: 'Spectators cannot call liar' };
+    }
+
+    // Only the current player (the one after the accused) may call liar
+    if (callerId !== this.turnOrder[this.currentPlayerIndex]) {
+      return { success: false, message: 'Not your turn' };
     }
 
     const play = this.roundPlays[accusedId];

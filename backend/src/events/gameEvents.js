@@ -5,6 +5,7 @@
 const sessionStore = require('../store/sessionStore');
 const lobbyStore = require('../store/lobbyStore');
 const logger = require('../utils/logger');
+const validate = require('../utils/validate');
 
 const cb = (callback, data) => {
   if (typeof callback === 'function') callback(data);
@@ -20,21 +21,32 @@ async function emitPrivateHands(io, lobbyCode, gameEngine) {
   }
 }
 
+/**
+ * Resolve the game for an in-game event and check the sender belongs to it.
+ * Game events act only on the lobby the socket joined (SPEC §3).
+ * @returns {{ error: string } | { gameEngine, playerId, lobbyCode }}
+ */
+function resolveGame(socket, rawLobbyCode) {
+  const { playerId, lobbyCode: socketLobby } = socket.data;
+  if (!playerId || !socketLobby) return { error: 'Not authenticated' };
+  const lobbyCode = validate.lobbyCode(rawLobbyCode);
+  if (!lobbyCode || lobbyCode !== socketLobby) return { error: 'Not in this game' };
+  const gameEngine = sessionStore.getSession(lobbyCode);
+  if (!gameEngine) return { error: 'Game session not found' };
+  if (!gameEngine.players.some(p => p.id === playerId)) return { error: 'Not in this game' };
+  return { gameEngine, playerId, lobbyCode };
+}
+
 module.exports = (io) => {
   io.on('connection', (socket) => {
-    socket.on('game:play', async (lobbyCode, cardsIndices, callback) => {
+    socket.on('game:play', async (rawLobbyCode, cardsIndices, callback) => {
       try {
-        const { playerId } = socket.data;
-        if (!playerId) {
-          cb(callback, { success: false, message: 'Not authenticated' });
+        const ctx = resolveGame(socket, rawLobbyCode);
+        if (ctx.error) {
+          cb(callback, { success: false, message: ctx.error });
           return;
         }
-
-        const gameEngine = sessionStore.getSession(lobbyCode);
-        if (!gameEngine) {
-          cb(callback, { success: false, message: 'Game session not found' });
-          return;
-        }
+        const { gameEngine, playerId, lobbyCode } = ctx;
 
         const result = gameEngine.playTurn(playerId, cardsIndices);
         if (!result.success) {
@@ -97,19 +109,14 @@ module.exports = (io) => {
       }
     });
 
-    socket.on('game:callLiar', async (lobbyCode, callback) => {
+    socket.on('game:callLiar', async (rawLobbyCode, callback) => {
       try {
-        const { playerId } = socket.data;
-        if (!playerId) {
-          cb(callback, { success: false, message: 'Not authenticated' });
+        const ctx = resolveGame(socket, rawLobbyCode);
+        if (ctx.error) {
+          cb(callback, { success: false, message: ctx.error });
           return;
         }
-
-        const gameEngine = sessionStore.getSession(lobbyCode);
-        if (!gameEngine) {
-          cb(callback, { success: false, message: 'Game session not found' });
-          return;
-        }
+        const { gameEngine, playerId, lobbyCode } = ctx;
 
         const result = gameEngine.callLiar(playerId);
         if (!result.success) {
@@ -157,30 +164,6 @@ module.exports = (io) => {
         cb(callback, { success: true, gameState });
       } catch (error) {
         logger.error('Error calling liar', error);
-        cb(callback, { success: false, message: 'Server error' });
-      }
-    });
-
-    socket.on('game:nextTurn', (lobbyCode, callback) => {
-      try {
-        const gameEngine = sessionStore.getSession(lobbyCode);
-        if (!gameEngine) {
-          cb(callback, { success: false, message: 'Game session not found' });
-          return;
-        }
-
-        gameEngine.nextTurn();
-        const gameState = gameEngine.getGameState();
-
-        io.to(lobbyCode).emit('game:turn', {
-          currentPlayerId: gameState.currentPlayerId,
-          timeLimit: 30
-        });
-
-        io.to(lobbyCode).emit('game:state', gameState);
-        cb(callback, { success: true, gameState });
-      } catch (error) {
-        logger.error('Error advancing turn', error);
         cb(callback, { success: false, message: 'Server error' });
       }
     });
