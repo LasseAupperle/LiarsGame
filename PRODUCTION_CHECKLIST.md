@@ -1,8 +1,7 @@
 # Release checklist
 
 ## Before deploying
-- [ ] `cd backend && npm test` passes (CI green)
-- [ ] `cd frontend && npm run build` succeeds
+- [ ] CI green: backend tests, frontend unit tests + build, e2e
 - [ ] `docs/SPEC.md` and `PROJECT_PLAN.md` changelog updated for this change
 
 ## Local smoke test (two browser windows)
@@ -12,6 +11,8 @@
 - [ ] Turn off network in one window (DevTools → Offline) for 10 s → reconnects, game continues
 - [ ] Close one window on its turn → the other sees a card auto-played after 15 s
 - [ ] Keyboard: 1–5, Enter, L, H, S, C
+- [ ] Solo: add bots, play to the end, Rematch
+- [ ] Chat between two windows; unread badge
 
 ## Deploy
 - [ ] Backend: merging to `main` triggers *Deploy backend* (or Render → Manual Deploy) —

@@ -40,3 +40,6 @@ cache/
 
 
 
+e2e-dist/
+test-results/
+playwright-report/

@@ -41,13 +41,17 @@ backend/test/            rules/engine unit tests, socket + presence integration 
 frontend/src/
   App.jsx                routes by status: lobby | playing | won
   store/                 gameStore (game state + stored session), uiStore, socketStore (connection + auto-rejoin)
-  hooks/                 useGame (combined), useSocket, useSound, useKeyboardShortcuts, useHapticFeedback
+  hooks/                 useGame (combined), useGlobalGameEvents (game:started, hands, chat),
+                         useSocket, useSound, useKeyboardShortcuts, useHapticFeedback
   pages/                 LobbyPage, GamePage
   components/Lobby/      LobbyCreate, LobbyJoin, LobbyBrowse, LobbyRoom
   components/Game/       GameBoard → PokerTable (PlayerSeat, TableCenter, DiscardPile, ScoreStrip,
                          SelfArea → PlayerHand + ActionButtons + RulesModal), RoundTransition,
                          GameTimer, GameWon, DisconnectBanner
-  components/Shared/     Header, NetworkStatus, VolumeControl, KeyboardShortcutsHelp
+  components/Shared/     Header, NetworkStatus, VolumeControl, KeyboardShortcutsHelp, Toasts, ChatPanel
+  features.css           styles for toasts, chat, bots, rematch (kept apart from AppStyles.css)
+frontend/src/store/__tests__/  Vitest unit tests
+frontend/e2e/            Playwright end-to-end tests (playwright.config.js starts both servers)
 frontend/public/         manifest.json, icons/, assets/cards, assets/sounds
 ```
 
@@ -64,7 +68,8 @@ frontend/public/         manifest.json, icons/, assets/cards, assets/sounds
 - Poker-table UI with card art, sounds + volume, keyboard shortcuts, card hiding, rules modal.
 - PWA installable (manifest + icons + service worker).
 - Bots for solo play / filling a table; rematch in the same lobby; lobby/game chat.
-- Backend tests (unit, socket integration, presence, bots incl. a full solo game); CI on every push.
+- Tests: backend (unit, socket integration, presence, bots, chat), frontend unit (Vitest) and
+  e2e (Playwright); CI on every push.
 
 ---
 
@@ -126,6 +131,9 @@ frontend/public/         manifest.json, icons/, assets/cards, assets/sounds
   1–200 chars, 5 msgs / 10 s per player, last 50 kept per lobby and returned on join/rejoin,
   survives rematch. Bots occasionally comment after liar calls. UI: floating 💬 button with
   unread badge, panel with quick-reaction emoji (`components/Shared/ChatPanel.jsx`).
+- **Frontend tests:** Vitest (`npm test`) for gameStore/uiStore and socketStore auto-rejoin
+  (mocked socket); Playwright e2e (`npm run test:e2e`) — two-player game with chat and a
+  mid-game reload, and a full solo game vs 3 bots ending in a rematch. CI runs both.
 
 ### 2026-11-08
 - Added `docs/SPEC.md` (source of truth) and `CLAUDE.md` (spec-first workflow).

@@ -175,12 +175,14 @@
   background: rgba(255, 255, 255, 0.06);
   font-size: 1.05rem;
 }
-.chat-input-row {
+.chat-panel form.chat-input-row {
   display: flex;
+  flex-direction: row; /* override the global column form layout */
+  align-items: center;
   gap: 6px;
   padding: 8px 10px 10px;
 }
-.chat-input-row input {
+.chat-panel .chat-input-row input {
   flex: 1;
   min-width: 0;
   padding: 8px 10px;
@@ -190,8 +192,9 @@
   color: var(--text-on-dark);
   font-size: 16px; /* prevents iOS zoom on focus */
 }
-.chat-input-row button[type='submit'] {
-  padding: 8px 12px;
+.chat-panel .chat-input-row button[type='submit'] {
+  flex: 0 0 auto;
+  padding: 8px 14px;
   background: var(--accent);
   color: #fff;
 }

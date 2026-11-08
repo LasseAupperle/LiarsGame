@@ -12,11 +12,14 @@
 ## Layout
 - `backend/` — Node + Express + Socket.IO, in-memory state. Tests: `cd backend && npm test`.
 - `frontend/` — React + Vite + Zustand PWA. Build: `cd frontend && npm run build`.
+  Unit tests: `npm test` (Vitest). E2E: `npm run test:e2e` (Playwright, starts backend + build).
 
 ## Checks before committing
 - `cd backend && npm test`
-- `cd frontend && npm run build`
+- `cd frontend && npm test && npm run build`
+- For gameplay/connection changes also `cd frontend && npm run test:e2e`
 
 ## Deploy
 - Frontend: Netlify, auto-deploys on push to `main`.
-- Backend: Render, **manual deploy** after every backend change.
+- Backend: Render, deployed by `.github/workflows/deploy-backend.yml` via deploy hook once the
+  `RENDER_DEPLOY_HOOK_URL` secret is set; otherwise manual deploy after every backend change.

@@ -38,14 +38,19 @@ Open two browser windows (or a private window) to play against yourself.
 ## Tests & build
 
 ```bash
-cd backend && npm test        # unit + Socket.IO integration tests
+cd backend && npm test        # unit + Socket.IO integration tests (incl. a full game vs bots)
 ```
 
 ```bash
-cd frontend && npm run build  # production build into frontend/dist
+cd frontend && npm test       # Vitest: stores + auto-rejoin logic
 ```
 
-CI (GitHub Actions) runs both on every push and pull request.
+```bash
+cd frontend && npm run test:e2e   # Playwright: real server + build in Chromium
+```
+
+The first e2e run needs a browser: `cd frontend && npx playwright install chromium`.
+CI (GitHub Actions) runs all of these plus the production build on every push and pull request.
 
 ## Controls
 
@@ -63,6 +68,9 @@ On mobile: tap cards to select; haptic feedback where supported.
 ## Features
 
 - Lobbies with 5-character codes; Standard (20 pts), Short (10 pts) and Timed modes
+- Bots for solo play or to fill a half-empty table
+- Lobby and in-game chat with quick reactions
+- Rematch in the same lobby after a game
 - Join a running game (dealt in from the next round)
 - Server-authoritative rules — every action is validated server-side
 - Robust reconnection: auto-rejoin after network drops and page reloads, grace periods,
