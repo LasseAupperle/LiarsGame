@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <!-- Liars Game icon: two fanned cards, the front one face-down with a "?" -->
+  <rect width="512" height="512" fill="#1a1a2e"/>
+  <g transform="translate(256 262)">
+    <g transform="rotate(-14)">
+      <rect x="-104" y="-150" width="208" height="292" rx="22" fill="#f5f5f7"/>
+      <text x="-74" y="-92" font-family="Georgia, serif" font-size="64" font-weight="700" fill="#d63031">A</text>
+    </g>
+    <g transform="rotate(10) translate(30 6)">
+      <rect x="-104" y="-150" width="208" height="292" rx="22" fill="#667eea" stroke="#f5f5f7" stroke-width="10"/>
+      <rect x="-80" y="-126" width="160" height="244" rx="14" fill="none" stroke="#c8d0ff" stroke-width="6" stroke-dasharray="14 10"/>
+      <text x="0" y="52" text-anchor="middle" font-family="Georgia, serif" font-size="170" font-weight="700" fill="#ffffff">?</text>
+    </g>
+  </g>
+</svg>

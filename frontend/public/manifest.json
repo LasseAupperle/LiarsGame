@@ -34,26 +34,7 @@
       "purpose": "maskable"
     }
   ],
-  "screenshots": [
-    {
-      "src": "/screenshots/narrow.png",
-      "sizes": "540x720",
-      "type": "image/png",
-      "form_factor": "narrow"
-    },
-    {
-      "src": "/screenshots/wide.png",
-      "sizes": "1280x720",
-      "type": "image/png",
-      "form_factor": "wide"
-    }
-  ],
-  "categories": ["games"],
-  "screenshots_mobile": [
-    {
-      "src": "/screenshots/narrow.png",
-      "sizes": "540x720",
-      "type": "image/png"
-    }
+  "categories": [
+    "games"
   ]
 }

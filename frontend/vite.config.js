@@ -6,9 +6,9 @@ export default defineConfig({
   plugins: [
     react(),
     VitePWA({
-      modes: 'development',
+      // Service worker registration is injected by the plugin (registerSW.js)
       base: '/',
-      includeAssets: ['favicon.ico', '/icons/**/*.png'],
+      includeAssets: ['icons/*.png', 'icons/*.svg'],
       manifest: false,
       workbox: {
         globPatterns: ['**/*.{js,css,html,svg,png,jpg,gif,webp,woff,woff2,ttf,eot}'],

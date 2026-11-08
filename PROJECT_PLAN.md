@@ -229,3 +229,13 @@ LiarsGame/
     a game ends.
   - Backend refactor: `events/gameFlow.js` (round/turn progression shared by all events),
     `store/presenceStore.js`, `config.js` (timings, overridable via env).
+- **PWA & cleanup:**
+  - Added PWA icons (`frontend/public/icons/`, source `icon.svg`; 192/512 + maskable,
+    apple-touch, favicon). The app was not installable before: every icon was a 404.
+  - Removed the missing screenshot entries from the manifest and the duplicate inline
+    service-worker registration (the Vite PWA plugin injects `registerSW.js`).
+  - Deleted unused components (CardDisplay, CardVisibilityToggle, Modal, PlayHistory,
+    PlayerPanel, ScoreBoard, SoundToggle), the no-op swipe hook, `ICON_SETUP.html`, and the
+    unused `axios` / `redis` dependencies. Their CSS in `AppStyles.css` is left for the UI pass.
+  - Bonus pot, spectator and connection state are available to the UI via the store
+    (`bonus`, `players[].spectator`, `players[].connected`) — display is part of the UI pass.

@@ -1,7 +1,6 @@
 import { useEffect } from 'react';
 import useGame from '../../hooks/useGame';
 import useKeyboardShortcuts from '../../hooks/useKeyboardShortcuts';
-import useTouchGestures from '../../hooks/useTouchGestures';
 import Header from '../Shared/Header';
 import NetworkStatus from '../Shared/NetworkStatus';
 import DisconnectBanner from './DisconnectBanner';
@@ -25,7 +24,6 @@ export default function GameBoard() {
   } = useGame();
 
   useKeyboardShortcuts();
-  useTouchGestures();
 
   useEffect(() => {
     if (!gameCode) return;
