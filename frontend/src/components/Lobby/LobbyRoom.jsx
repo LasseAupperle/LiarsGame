@@ -25,7 +25,8 @@ export default function LobbyRoom() {
     emit,
     on,
     off,
-    connected
+    connected,
+    clearSession
   } = useGame();
 
   const [canStart, setCanStart] = useState(false);
@@ -82,6 +83,7 @@ export default function LobbyRoom() {
   const handleLeaveLobby = () => {
     emit('lobby:leave', (response) => {
       if (response.success) {
+        clearSession();
         window.location.href = '/';
       }
     });
