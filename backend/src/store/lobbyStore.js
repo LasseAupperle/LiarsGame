@@ -33,6 +33,12 @@ class LobbyStore {
       return { success: false, message: 'Lobby not found' };
     }
 
+    // Names are unique per lobby, case-insensitive (SPEC §2)
+    const taken = lobby.players.some(p => p.name.toLowerCase() === playerName.toLowerCase());
+    if (taken) {
+      return { success: false, message: 'That name is already taken in this lobby' };
+    }
+
     if (lobby.status === 'playing') {
       if (lobby.players.length >= 4) {
         return { success: false, message: 'Game is full' };

@@ -8,7 +8,6 @@ class Player {
     this.name = name;
     this.hand = [];              // Cards in hand
     this.mainScore = 0;          // Primary score (round wins)
-    this.bonusModifier = 0;      // Liar bonus tracker
     this.spectator = false;      // True if in tie-break and not top scorer
     this.cardsPlayedCount = 0;   // Cards played in current turn
   }
@@ -47,16 +46,11 @@ class Player {
     this.mainScore = Math.max(0, this.mainScore + delta);
   }
 
-  updateBonusModifier(delta) {
-    this.bonusModifier = Math.max(0, this.bonusModifier + delta);
-  }
-
   getState() {
     return {
       id: this.id,
       name: this.name,
       mainScore: this.mainScore,
-      bonusModifier: this.bonusModifier,
       spectator: this.spectator,
       cardsLeft: this.hand.length,
       cardsPlayedCount: this.cardsPlayedCount

@@ -199,3 +199,11 @@ LiarsGame/
   - Validation of names (trimmed, 1–20 chars), lobby codes, game settings, rejoin payloads.
   - Lobby codes are guaranteed unique.
   - Rejoin restores `socket.data.playerName` (disconnect notices showed `undefined`).
+- **Rules decisions** (SPEC §1.5, §1.6, §2):
+  - Bonus is now **one shared pot**: +1 per no-liar round, a correct call pays +1 + pot,
+    pot −1 (min 0) after any call. Replaces the old per-player bonus (which paid the caller
+    the *accused's* bonus). Exposed as `gameState.bonus`; `players[].bonusModifier` removed.
+  - Final play of a round stays unchallengeable (documented, deliberate).
+  - Duplicate names in a lobby are rejected (case-insensitive).
+  - `scoreDeltas` now lists every changed player with the real (clamped) change.
+  - In-game rules modal text updated to match.

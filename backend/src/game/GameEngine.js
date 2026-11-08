@@ -24,6 +24,7 @@ class GameEngine {
       timedMinutes: settings.timedMinutes || null,
     };
     this.timedThreshold = null; // set when timer fires
+    this.bonus = 0; // shared bonus pot (SPEC §1.6)
   }
 
   /**
@@ -156,19 +157,26 @@ class GameEngine {
     }
 
     const isLiarCorrect = !play.truthful;
-    const scoreChange = calculateScoreChange(isLiarCorrect, accusedPlayer.bonusModifier);
+    const bonusPaid = isLiarCorrect ? this.bonus : 0;
+    const scoreChange = calculateScoreChange(isLiarCorrect, this.bonus);
 
-    accusedPlayer.updateScore(scoreChange.liarScore);
-    caller.updateScore(scoreChange.callerScore);
+    // Record the actual change per player (scores are clamped at 0)
+    const scoreDeltas = {};
+    const applyScore = (p, delta) => {
+      const before = p.mainScore;
+      p.updateScore(delta);
+      if (p.mainScore !== before) scoreDeltas[p.id] = p.mainScore - before;
+    };
 
-    const newBonus = isLiarCorrect ? 0 : Math.max(0, accusedPlayer.bonusModifier - 1);
-    accusedPlayer.updateBonusModifier(newBonus - accusedPlayer.bonusModifier);
-
+    applyScore(accusedPlayer, scoreChange.liarScore);
+    applyScore(caller, scoreChange.callerScore);
     this.players.forEach(p => {
       if (p.id !== accusedId && p.id !== callerId && !p.spectator) {
-        p.updateScore(scoreChange.othersScore);
+        applyScore(p, scoreChange.othersScore);
       }
     });
+
+    this.bonus = Math.max(0, this.bonus - 1);
 
     logger.log(`Liar call by ${caller.name} on ${accusedPlayer.name}: ${isLiarCorrect ? 'CORRECT' : 'WRONG'}`);
 
@@ -179,25 +187,28 @@ class GameEngine {
         truthful: play.truthful,
         isLiarCorrect,
         cardsPlayed: play.cardsPlayed,
-        scoreDeltas: {
-          [accusedId]: scoreChange.liarScore,
-          [callerId]: scoreChange.callerScore
-        }
+        accusedId,
+        callerId,
+        bonusPaid,
+        scoreDeltas
       }
     };
   }
 
   /**
    * Resolve a round where all players played out their cards with no liar call.
-   * All active players gain +1 point and +1 bonus modifier.
+   * All active players gain +1 point; the shared bonus pot grows by 1.
+   * @returns {Object<string, number>} scoreDeltas
    */
   resolveNoLiarCall() {
-    const active = this.players.filter(p => !p.spectator);
-    active.forEach(p => {
+    const scoreDeltas = {};
+    this.players.filter(p => !p.spectator).forEach(p => {
       p.updateScore(1);
-      p.updateBonusModifier(1);
+      scoreDeltas[p.id] = 1;
     });
-    logger.log('Round resolved: no liar call — all players +1 pt, bonus +1');
+    this.bonus++;
+    logger.log(`Round resolved: no liar call — all players +1 pt, bonus pot now ${this.bonus}`);
+    return scoreDeltas;
   }
 
   /**
@@ -269,6 +280,7 @@ class GameEngine {
   getGameState() {
     return {
       roundNumber: this.roundNumber,
+      bonus: this.bonus,
       winningCard: this.winningCard,
       currentPlayerId: this.turnOrder[this.currentPlayerIndex],
       players: this.players.map(p => p.getState()),

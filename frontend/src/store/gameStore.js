@@ -20,7 +20,7 @@ const useGameStore = create((set, get) => ({
   winningCard: null,
   currentPlayerId: null,
   turnOrder: [],
-  bonusModifier: 0,
+  bonus: 0, // shared bonus pot (SPEC §1.6)
   roundNumber: 0,
 
   // History
@@ -45,7 +45,6 @@ const useGameStore = create((set, get) => ({
   setWinningCard: (card) => set({ winningCard: card }),
   setCurrentPlayerId: (id) => set({ currentPlayerId: id }),
   setRoundNumber: (num) => set({ roundNumber: num }),
-  setBonusModifier: (mod) => set({ bonusModifier: mod }),
   setTurnOrder: (order) => set({ turnOrder: order }),
   setMyHand: (hand) => set({ myHand: hand }),
   setWinner: (winner) => set({ winner }),
@@ -57,6 +56,7 @@ const useGameStore = create((set, get) => ({
       currentPlayerId: gameData.currentPlayerId,
       players: gameData.players,
       roundNumber: gameData.roundNumber,
+      bonus: gameData.bonus ?? 0,
       turnOrder: gameData.turnOrder,
       history: gameData.playHistory || []
     }),
@@ -90,7 +90,7 @@ const useGameStore = create((set, get) => ({
       winningCard: null,
       currentPlayerId: null,
       turnOrder: [],
-      bonusModifier: 0,
+      bonus: 0,
       roundNumber: 0,
       history: [],
       myHand: [],

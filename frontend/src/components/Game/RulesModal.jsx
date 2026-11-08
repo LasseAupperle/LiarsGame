@@ -37,16 +37,17 @@ export default function RulesModal() {
                   <li><strong>Liar wrong</strong> (they were truthful): caller −1 pt, accused +1 pt, others +1 pt</li>
                 </ul>
                 <p>After a Liar call, a new round starts.</p>
+                <p>The play that empties the last hand can't be challenged — the round ends right away as a no-liar round.</p>
               </section>
 
               <section>
-                <h3>Bonus Modifier</h3>
-                <p>Each round that passes <em>without</em> a Liar call, the bonus increases by +1. This is added to the caller's score if they successfully call a Liar. It resets after any Liar call.</p>
+                <h3>Bonus Pot</h3>
+                <p>There is one shared bonus pot. Each round that ends <em>without</em> a Liar call, everyone gets +1 and the pot grows by +1. A <strong>correct</strong> Liar call pays the caller +1 plus the whole pot. After any Liar call the pot shrinks by 1.</p>
               </section>
 
               <section>
                 <h3>Winning</h3>
-                <p>First player to reach <strong>20+ points</strong> with the highest score wins. If multiple players reach 20, only the tied leaders keep playing until one pulls ahead.</p>
+                <p>First player to reach <strong>20+ points</strong> (10 in Short mode) with the highest score wins. In Timed mode the highest score when time runs out wins. If multiple players reach 20, only the tied leaders keep playing until one pulls ahead.</p>
               </section>
             </div>
           </div>

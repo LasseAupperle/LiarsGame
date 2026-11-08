@@ -13,10 +13,9 @@ function isTruthful(cards, winningCard) {
 }
 
 /**
- * Calculate score changes after liar resolution
+ * Calculate score changes after liar resolution (SPEC §1.4)
  * @param {boolean} isLiarCorrect - Was the liar call correct?
- * @param {boolean} wasCallerCorrect - Did the caller call the right player?
- * @param {number} bonusModifier - Current bonus modifier
+ * @param {number} bonusModifier - Current shared bonus pot
  * @returns {{ liarScore: number, callerScore: number, othersScore: number }}
  */
 function calculateScoreChange(isLiarCorrect, bonusModifier) {

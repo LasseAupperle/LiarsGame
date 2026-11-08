@@ -48,15 +48,16 @@ Status markers: **[OPEN]** = decision pending, not yet specified.
 ### 1.5 Round with no liar call
 - When every active player's hand is empty, the round ends without a liar call.
 - Every active player gains +1 point and the bonus increases by +1.
-- **[OPEN]** Whether the final play of a round (the one that empties the last hand)
-  may still be challenged by the next player before the round resolves. Current
-  behaviour: it cannot; the round resolves immediately.
+- The final play of a round (the one that empties the last hand) **cannot** be
+  challenged: the round resolves immediately as a no-liar round. (Decided
+  2026-11-08 — deliberate: emptying your hand last is a reward.)
 
-### 1.6 Bonus modifier
-- **[OPEN]** Exact semantics. Current implementation (to be replaced once decided):
-  each player has their own bonus value; a no-liar round gives every active player
-  +1 bonus; a successful caller gains the *accused's* bonus; after a call only the
-  accused's bonus changes (correct call → 0, wrong call → −1, min 0).
+### 1.6 Bonus pot
+- There is **one shared bonus pot per game**, starting at 0.
+- Each round that ends with no liar call: pot +1.
+- A **correct** liar call pays the caller +1 + pot (the pot value before the call).
+- After **any** liar call (correct or wrong): pot = max(0, pot − 1).
+- The pot is public (part of `gameState`).
 
 ### 1.7 Game modes & winning
 | Mode | Target | Notes |
@@ -78,7 +79,8 @@ Status markers: **[OPEN]** = decision pending, not yet specified.
 
 - Lobby code: 5 characters `A–Z0–9`, unique among live lobbies. Codes are
   case-insensitive on input.
-- Player name: trimmed, 1–20 characters. **[OPEN]** uniqueness within a lobby.
+- Player name: trimmed, 1–20 characters, unique within the lobby (case-insensitive).
+  Applies to joining a waiting lobby and joining a running game.
 - The creator is the host. If the host leaves a waiting lobby, the next player in
   join order becomes host. Only the host can start; start requires 2–4 players.
 - A lobby with no players is deleted.
@@ -86,7 +88,7 @@ Status markers: **[OPEN]** = decision pending, not yet specified.
   sits out the current round (no cards) and is dealt in from the next round.
 - **Disconnect during a game:** the player has a 120 s grace period. Within it they
   can rejoin with `(lobbyCode, playerId)` and get the full state and their hand
-  back. When it expires they are removed from turn order (become spectator). If
+  back. When the grace period expires they are removed from turn order (become spectator). If
   ≤ 1 player remains in turn order, the game ends and that player (if any) wins.
 - **Disconnect in a waiting lobby:** the player is removed immediately.
 - All state is in memory; a server restart ends every game.
@@ -139,7 +141,7 @@ which receives `{ success: boolean, message?: string, ... }`.
 | `game:started` | `{lobbyCode, gameState, settings, endTime}` | lobby |
 | `game:state` | `gameState` (see 4.3) | lobby |
 | `game:hand` | `number[]` (own hand only) | single player |
-| `game:liar:revealed` | `{truthful, isLiarCorrect, cardsPlayed, accusedName, callerName, scoreDeltas, scores}` | lobby |
+| `game:liar:revealed` | `{truthful, isLiarCorrect, cardsPlayed, accusedName, callerName, scoreDeltas, scores, bonusPaid}` | lobby |
 | `game:round:noLiar` | `{scores, scoreDeltas}` | lobby |
 | `game:timeUp` | `{tiebreak, gameState}` | lobby |
 | `game:won` | `{winnerId, winnerName, finalScore}` | lobby |
@@ -147,12 +149,16 @@ which receives `{ success: boolean, message?: string, ... }`.
 | `player:reconnected` | `{playerId}` | lobby |
 | `player:left` | `{playerId, playerName}` | lobby |
 
+`scoreDeltas` maps **every** player whose score changed to the actual change
+(after clamping at 0).
+
 ### 4.3 `gameState`
 ```
 {
   roundNumber, winningCard, currentPlayerId, turnOrder, settings,
   playHistory: [{ playerId, playerName, cardsPlayed, claim }],
-  players: [{ id, name, mainScore, bonusModifier, spectator, cardsLeft, cardsPlayedCount }]
+  bonus,                       // shared bonus pot (§1.6)
+  players: [{ id, name, mainScore, spectator, cardsLeft, cardsPlayedCount }]
 }
 ```
 Hands are never included in `gameState`; each player receives only their own hand

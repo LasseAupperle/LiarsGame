@@ -65,11 +65,9 @@ module.exports = (io) => {
         const allHandsEmpty = activePlayers.every(p => p.hand.length === 0);
 
         if (allHandsEmpty) {
-          gameEngine.resolveNoLiarCall();
+          const noLiarDeltas = gameEngine.resolveNoLiarCall();
 
           const activePlayers = gameEngine.players.filter(p => !p.spectator);
-          const noLiarDeltas = {};
-          activePlayers.forEach(p => { noLiarDeltas[p.id] = 1; });
           io.to(lobbyCode).emit('game:round:noLiar', {
             scores: activePlayers.map(p => ({ id: p.id, name: p.name, mainScore: p.mainScore })),
             scoreDeltas: noLiarDeltas,
@@ -124,9 +122,8 @@ module.exports = (io) => {
           return;
         }
 
-        const { truthful, isLiarCorrect, cardsPlayed, scoreDeltas } = result.result;
+        const { truthful, isLiarCorrect, cardsPlayed, scoreDeltas, accusedId, bonusPaid } = result.result;
 
-        const accusedId = Object.keys(scoreDeltas)[0];
         const accusedPlayer = gameEngine.players.find(p => p.id === accusedId);
         const callerPlayer = gameEngine.players.find(p => p.id === playerId);
 
@@ -137,6 +134,7 @@ module.exports = (io) => {
           accusedName: accusedPlayer?.name,
           callerName: callerPlayer?.name,
           scoreDeltas,
+          bonusPaid,
           scores: gameEngine.players
             .filter(p => !p.spectator)
             .map(p => ({ id: p.id, name: p.name, mainScore: p.mainScore }))
