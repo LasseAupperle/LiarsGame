@@ -103,6 +103,20 @@ const useUIStore = create((set) => ({
 
   clearError: () => set({ error: null }),
 
+  /** Clear per-game UI (table, discard pile, overlays) but keep preferences like volume. */
+  resetGameUI: () =>
+    set({
+      selectedCards: [],
+      disconnectedPlayers: [],
+      discardPile: [],
+      roundTransition: null,
+      tableDisplay: {
+        count: 0, revealed: false, noLiar: false, cards: null,
+        accusedName: null, callerName: null,
+        isLiarCorrect: null, scoreDeltas: null, scores: null,
+      }
+    }),
+
   reset: () =>
     set({
       selectedCards: [],

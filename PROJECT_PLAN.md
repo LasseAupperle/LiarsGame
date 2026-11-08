@@ -62,7 +62,7 @@ frontend/public/         manifest.json, icons/, assets/cards, assets/sounds
   auto-play for a disconnected current player, late-rejoin sees the result (SPEC §2.1).
 - Poker-table UI with card art, sounds + volume, keyboard shortcuts, card hiding, rules modal.
 - PWA installable (manifest + icons + service worker).
-- Bots for solo play / filling a table.
+- Bots for solo play / filling a table; rematch in the same lobby.
 - Backend tests (unit, socket integration, presence, bots incl. a full solo game); CI on every push.
 
 ---
@@ -117,6 +117,10 @@ frontend/public/         manifest.json, icons/, assets/cards, assets/sounds
   bonus-weighted liar calls, occasional bluffs); bots act after 1–2.5 s. Host is always a
   human (UI now uses the server's `host`, not `players[0]`); a game with no humans left ends.
   `events/gameFlow.js` now owns liar resolution and the unified turn timer (`scheduleTurn`).
+- **Rematch** (SPEC §2.3): a won game sends the lobby back to `waiting` (same code, settings,
+  bots, players who stayed) with `lastResult`; `game:won` carries `finalScores` + `rematch`.
+  Result screen offers Rematch / Leave; `game:started` is now handled app-wide
+  (`hooks/useGlobalGameEvents.js`) so players still on the result screen are dealt in.
 
 ### 2026-11-08
 - Added `docs/SPEC.md` (source of truth) and `CLAUDE.md` (spec-first workflow).

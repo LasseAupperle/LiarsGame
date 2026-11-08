@@ -159,7 +159,30 @@ class LobbyStore {
   getLobbyView(lobbyCode) {
     const lobby = this.lobbies[lobbyCode];
     if (!lobby) return null;
-    return { lobbyCode, host: lobby.host, players: lobby.players, settings: lobby.settings };
+    return {
+      lobbyCode,
+      host: lobby.host,
+      players: lobby.players,
+      settings: lobby.settings,
+      lastResult: lobby.lastResult ?? null,
+    };
+  }
+
+  /**
+   * Back to waiting after a game, for a rematch (SPEC §2.3).
+   * @param {{id, name, isBot, connected}[]} players - everyone who hadn't left
+   */
+  resetForRematch(lobbyCode, players, lastResult) {
+    const lobby = this.lobbies[lobbyCode];
+    if (!lobby) return;
+    lobby.status = 'waiting';
+    lobby.players = players.map(p => ({ id: p.id, name: p.name, connected: p.isBot || p.connected, isBot: p.isBot }));
+    lobby.roundNumber = null;
+    lobby.endTime = null;
+    lobby.lastResult = lastResult;
+    if (!lobby.players.some(p => p.id === lobby.host && !p.isBot)) {
+      lobby.host = lobby.players.find(p => !p.isBot)?.id ?? null;
+    }
   }
 
   getLobby(lobbyCode) {

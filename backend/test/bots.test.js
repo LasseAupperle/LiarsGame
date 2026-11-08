@@ -134,13 +134,70 @@ test('solo game against 3 bots plays to a winner', { timeout: 30000 }, async () 
   assert.ok(result.finalScore >= 10);
 });
 
+/** Drive a single human (always plays card 0) until game:won. */
+async function playUntilWon(sock, { playerId, lobbyCode, token }) {
+  let state = null;
+  let hand = [];
+  const onState = s => { state = s; };
+  const onHand = h => { hand = h; };
+  sock.on('game:state', onState);
+  sock.on('game:hand', onHand);
+  // Fetch the current state + hand (the deal may have happened before we listened)
+  const now = await call(sock, 'game:rejoin', lobbyCode, token);
+  state = now.gameState;
+  hand = now.hand;
+  const won = new Promise(r => sock.once('game:won', r));
+  let acting = false;
+  const loop = setInterval(async () => {
+    if (acting || !state || state.currentPlayerId !== playerId || hand.length === 0) return;
+    acting = true;
+    await call(sock, 'game:play', lobbyCode, [0]);
+    acting = false;
+  }, 10);
+  let timer;
+  const result = await Promise.race([won, new Promise(r => { timer = setTimeout(() => r(null), 25000); })]);
+  clearTimeout(timer);
+  clearInterval(loop);
+  sock.off('game:state', onState);
+  sock.off('game:hand', onHand);
+  return result;
+}
+
+test('after a win the lobby returns to waiting for a rematch (SPEC §2.3)', { timeout: 60000 }, async () => {
+  const me = await connect();
+  const created = await call(me, 'lobby:create', 'Again', { mode: 'short' });
+  await call(me, 'lobby:addBot');
+  const updates = [];
+  me.on('lobby:updated', u => updates.push(u));
+
+  await call(me, 'lobby:start');
+  const result = await playUntilWon(me, created);
+  assert.ok(result, 'first game finished');
+  assert.equal(result.rematch, true);
+  assert.equal(result.finalScores.length, 2);
+  assert.ok(result.finalScores[0].mainScore >= result.finalScores[1].mainScore);
+
+  await sleep(50);
+  const view = updates.at(-1);
+  assert.equal(view.host, created.playerId);
+  assert.equal(view.players.length, 2, 'bot kept');
+  assert.equal(view.lastResult.winnerId, result.winnerId);
+
+  const rejoin = await call(me, 'game:rejoin', created.lobbyCode, created.token);
+  assert.equal(rejoin.phase, 'lobby');
+  assert.equal(rejoin.lastResult.winnerId, result.winnerId);
+
+  const second = await call(me, 'lobby:start');
+  assert.equal(second.success, true, 'host can start the rematch');
+  assert.ok(second.gameState.players.every(p => p.mainScore === 0), 'scores reset');
+  assert.equal(second.gameState.roundNumber, 1);
+});
+
 test('when the last human leaves, a game with bots ends', async () => {
   const me = await connect();
-  await call(me, 'lobby:create', 'Alone', {});
+  const code = (await call(me, 'lobby:create', 'Alone', {})).lobbyCode;
   await call(me, 'lobby:addBot');
-  const started = await call(me, 'lobby:start');
-  const code = started.gameState && (await call(me, 'lobby:list')).lobbies.find(l => l.status === 'playing' && l.playerCount === 2)?.code;
-  assert.ok(code);
+  assert.equal((await call(me, 'lobby:start')).success, true);
   await call(me, 'lobby:leave');
   await sleep(50);
   const still = (await call(me, 'lobby:list')).lobbies.find(l => l.code === code);

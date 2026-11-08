@@ -20,10 +20,7 @@ const cb = (callback, data) => {
 
 const MAX_PLAYERS = 4;
 
-function emitLobbyUpdate(io, lobbyCode) {
-  const view = lobbyStore.getLobbyView(lobbyCode);
-  if (view) io.to(lobbyCode).emit('lobby:updated', view);
-}
+const { emitLobbyUpdate, removeFromLobby } = flow;
 
 /** Attach a socket to a player in a lobby/game. */
 function attach(socket, lobbyCode, playerId, playerName) {
@@ -41,13 +38,6 @@ function startGameGrace(io, lobbyCode, gameEngine, playerId) {
     flow.removeFromGame(io, lobbyCode, gameEngine, playerId)
       .catch(error => logger.error('Error removing player', error));
   });
-}
-
-/** Remove a player from a waiting lobby and notify the rest. */
-function removeFromLobby(io, lobbyCode, playerId) {
-  lobbyStore.leaveLobby(lobbyCode, playerId);
-  presenceStore.forget(playerId);
-  emitLobbyUpdate(io, lobbyCode);
 }
 
 module.exports = (io) => {
@@ -373,11 +363,7 @@ module.exports = (io) => {
 
       if (lobbyStore.getLobby(lobbyCode)) {
         emitLobbyUpdate(io, lobbyCode);
-        presenceStore.startGrace(playerId, config.LOBBY_GRACE_MS, () => {
-          const lobby = lobbyStore.getLobby(lobbyCode);
-          // If the game started meanwhile, the in-game grace period took over
-          if (lobby?.status === 'waiting') removeFromLobby(io, lobbyCode, playerId);
-        });
+        flow.startLobbyGrace(io, lobbyCode, playerId);
       }
     });
   });

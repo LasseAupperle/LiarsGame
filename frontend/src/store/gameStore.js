@@ -51,11 +51,26 @@ const useGameStore = create((set, get) => ({
   setRoundNumber: (num) => set({ roundNumber: num }),
   setTurnOrder: (order) => set({ turnOrder: order }),
   setMyHand: (hand) => set({ myHand: hand }),
-  // A finished game can't be rejoined: drop the stored session so a reload goes to the menu
+  // Without a rematch the game can't be rejoined: drop the stored session so a
+  // reload goes to the menu. With a rematch the lobby lives on (SPEC §2.3).
   setWinner: (winner) => {
-    localStorage.removeItem(SESSION_KEY);
+    if (winner && !winner.rematch) localStorage.removeItem(SESSION_KEY);
     set({ winner });
   },
+
+  /** Clear per-game state but keep identity + lobby (rematch / next game). */
+  resetGameState: () =>
+    set({
+      winningCard: null,
+      currentPlayerId: null,
+      turnOrder: [],
+      bonus: 0,
+      roundNumber: 0,
+      history: [],
+      myHand: [],
+      winner: null,
+      gameEndTime: null,
+    }),
   setGameSettings: (settings, endTime = null) => set({ gameSettings: settings, gameEndTime: endTime }),
 
   acceptGameState: (gameData) =>

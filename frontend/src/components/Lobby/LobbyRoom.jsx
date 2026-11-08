@@ -45,26 +45,10 @@ export default function LobbyRoom() {
       }
     };
 
-    const handleGameStart = (data) => {
-      if (data.gameState) {
-        acceptGameState(data.gameState);
-        if (data.settings) setGameSettings(data.settings, data.endTime || null);
-        setStatus('playing');
-      }
-    };
-
-    const handleHand = (hand) => {
-      setMyHand(hand);
-    };
-
     on('lobby:updated', handleLobbyUpdate);
-    on('game:started', handleGameStart);
-    on('game:hand', handleHand);
 
     return () => {
       off('lobby:updated', handleLobbyUpdate);
-      off('game:started', handleGameStart);
-      off('game:hand', handleHand);
     };
   }, [connected, gameCode, setPlayers, setHostId, setStatus, acceptGameState, setMyHand, on, off]);
 
@@ -90,7 +74,9 @@ export default function LobbyRoom() {
   const handleStartGame = () => {
     emit('lobby:start', (response) => {
       if (response.success && response.gameState) {
+        // useGlobalGameEvents handles game:started; this covers a missed event
         acceptGameState(response.gameState);
+        if (response.settings) setGameSettings(response.settings, response.endTime || null);
         setStatus('playing');
       } else if (!response.success) {
         toast('Could not start: ' + response.message, 'error');

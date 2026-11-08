@@ -4,11 +4,13 @@ import LobbyPage from './pages/LobbyPage';
 import GamePage from './pages/GamePage';
 import GameWon from './components/Game/GameWon';
 import Toasts from './components/Shared/Toasts';
+import useGlobalGameEvents from './hooks/useGlobalGameEvents';
 import './AppStyles.css';
 import './features.css';
 
 function App() {
   const { status, connected, winner, gameCode } = useGame();
+  useGlobalGameEvents();
 
   // Only block the screen before we're in a lobby/game. Mid-game, a dropped
   // connection shows the NetworkStatus banner and the game stays mounted while
@@ -31,11 +33,7 @@ function App() {
         {(status === 'playing' || status === 'spectating') && <GamePage />}
         <Toasts />
         {status === 'won' && winner && (
-          <GameWon
-            winnerId={winner.winnerId}
-            winnerName={winner.winnerName}
-            finalScore={winner.finalScore}
-          />
+          <GameWon winner={winner} />
         )}
       </>
     </ErrorBoundary>

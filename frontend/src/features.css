@@ -67,3 +67,17 @@
   cursor: pointer;
 }
 .avatar-offline .player-avatar { opacity: 0.45; }
+
+/* ---------- Rematch ---------- */
+.game-won-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+.game-won-actions button { min-width: 130px; }
+.rematch-hint {
+  margin-top: 10px;
+  font-size: 0.85rem;
+  opacity: 0.75;
+}

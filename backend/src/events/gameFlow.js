@@ -43,18 +43,56 @@ function clearTimers(lobbyCode) {
   delete gameTimers[lobbyCode];
 }
 
-/** End the game, announce the winner (if any) and remember the result briefly. */
+function emitLobbyUpdate(io, lobbyCode) {
+  const view = lobbyStore.getLobbyView(lobbyCode);
+  if (view) io.to(lobbyCode).emit('lobby:updated', view);
+}
+
+/** Remove a player from a waiting lobby and notify the rest. */
+function removeFromLobby(io, lobbyCode, playerId) {
+  lobbyStore.leaveLobby(lobbyCode, playerId);
+  presenceStore.forget(playerId);
+  emitLobbyUpdate(io, lobbyCode);
+}
+
+/** Waiting-lobby grace period for a disconnected player (SPEC §2.1). */
+function startLobbyGrace(io, lobbyCode, playerId) {
+  presenceStore.startGrace(playerId, config.LOBBY_GRACE_MS, () => {
+    const lobby = lobbyStore.getLobby(lobbyCode);
+    // If the game started meanwhile, the in-game grace period took over
+    if (lobby?.status === 'waiting') removeFromLobby(io, lobbyCode, playerId);
+  });
+}
+
+/**
+ * End the game and announce the winner (if any). With a winner and humans left,
+ * the lobby goes back to waiting for a rematch (SPEC §2.3); otherwise it closes.
+ */
 function endGame(io, lobbyCode, gameEngine, winner) {
+  const stayed = gameEngine.players.filter(p => !p.left);
+  const finalScores = [...stayed]
+    .sort((a, b) => b.mainScore - a.mainScore)
+    .map(p => ({ id: p.id, name: p.name, mainScore: p.mainScore, isBot: p.isBot }));
   const result = winner
     ? { winnerId: winner.id, winnerName: winner.name, finalScore: winner.mainScore }
     : null;
-  if (result) io.to(lobbyCode).emit('game:won', result);
+  const rematch = !!winner && stayed.some(p => !p.isBot);
+
+  if (result) io.to(lobbyCode).emit('game:won', { ...result, finalScores, rematch });
 
   clearTimers(lobbyCode);
   gameEngine.players.forEach(p => presenceStore.clearGrace(p.id));
   finishedGames[lobbyCode] = { winner: result, expiresAt: Date.now() + config.FINISHED_GAME_TTL_MS };
   sessionStore.deleteSession(lobbyCode);
-  lobbyStore.deleteLobby(lobbyCode);
+
+  if (!rematch) {
+    lobbyStore.deleteLobby(lobbyCode);
+    return;
+  }
+
+  lobbyStore.resetForRematch(lobbyCode, stayed, { ...result, finalScores });
+  stayed.filter(p => !p.isBot && !p.connected).forEach(p => startLobbyGrace(io, lobbyCode, p.id));
+  emitLobbyUpdate(io, lobbyCode);
 }
 
 /** Result of a recently finished game, for players rejoining late. */
@@ -272,6 +310,9 @@ function startGameTimer(io, lobbyCode, minutes) {
 }
 
 module.exports = {
+  emitLobbyUpdate,
+  removeFromLobby,
+  startLobbyGrace,
   emitPrivateHands,
   broadcastState,
   endGame,

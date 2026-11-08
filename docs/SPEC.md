@@ -150,6 +150,21 @@ round out and score nothing from it (decided 2026-11-08).
 - If no human remains in a running game (all left or removed), the game ends with no
   winner and the lobby is closed.
 
+
+### 2.3 Rematch
+- When a game ends **with a winner** and at least one human is still in it, the lobby
+  is kept: it returns to `waiting` with the same code, settings, bots and every
+  player who hadn't left (scores reset when the next game starts). The host stays
+  host if still present, otherwise the first human becomes host.
+- `game:won` carries `rematch: true` and the final scores. Each client shows the
+  result with **Rematch** (go to the lobby room) or **Leave** (`lobby:leave`).
+  Players still in the lobby when the host starts are dealt in, even if they are
+  still looking at the result screen.
+- Humans who are disconnected when the game ends keep their seat for the lobby
+  grace period (§2.1).
+- The lobby remembers `lastResult` (winner + final scores), included in its view and
+  in rejoin responses.
+- A game that ends without a winner (no humans left) closes the lobby as before.
 ---
 
 ## 3. Server-side enforcement
@@ -196,7 +211,7 @@ which receives `{ success: boolean, message?: string, ... }`.
 ### 4.2 Server → client
 | Event | Payload | Audience |
 |---|---|---|
-| `lobby:updated` | `{lobbyCode, host, settings, players[{id, name, connected, isBot}]}` | lobby |
+| `lobby:updated` | `{lobbyCode, host, settings, lastResult, players[{id, name, connected, isBot}]}` | lobby |
 | `game:started` | `{lobbyCode, gameState, settings, endTime}` | lobby |
 | `game:state` | `gameState` (see 4.3) | lobby |
 | `game:hand` | `number[]` (own hand only) | single player |
@@ -204,7 +219,7 @@ which receives `{ success: boolean, message?: string, ... }`.
 | `game:round:noLiar` | `{scores, scoreDeltas}` | lobby |
 | `game:autoPlayed` | `{playerId, playerName}` — server played for a disconnected player | lobby |
 | `game:timeUp` | `{tiebreak, gameState}` | lobby |
-| `game:won` | `{winnerId, winnerName, finalScore}` | lobby |
+| `game:won` | `{winnerId, winnerName, finalScore, finalScores[{id, name, mainScore, isBot}], rematch}` | lobby |
 | `player:disconnected` | `{playerId, playerName, timeoutMs}` | lobby |
 | `player:reconnected` | `{playerId}` | lobby |
 | `player:left` | `{playerId, playerName}` | lobby |
