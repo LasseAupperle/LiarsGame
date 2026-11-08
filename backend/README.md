@@ -1,14 +1,13 @@
-# Backend - Liars Game Socket.IO Server
+# Backend — Liars Game server
 
-Node.js + Express + Socket.IO server for Liars Game.
-
-## Setup
+Node + Express + Socket.IO, in-memory state.
 
 ```bash
 npm install
-npm run dev
+npm run dev     # nodemon, http://localhost:3000
+npm test        # unit + integration tests
+npm start       # production
 ```
 
-Server runs on `http://localhost:8000`
-
-See main `PROJECT_PLAN.md` for game engine structure, Socket.IO events, and development details.
+Environment: see `.env.example`. Behaviour and protocol: [../docs/SPEC.md](../docs/SPEC.md).
+Code map: [../PROJECT_PLAN.md](../PROJECT_PLAN.md#code-map).

@@ -1,9 +1,6 @@
 # Documentation
 
-## Folder Structure
+- [SPEC.md](SPEC.md) — **source of truth** for game rules (§1), lobbies & reconnection (§2),
+  server-side enforcement (§3) and the Socket.IO protocol (§4).
 
-- `GAME_RULES.md` - Complete game rules and terminology
-- `API_SOCKET_EVENTS.md` - Socket.IO event documentation
-- `ARCHITECTURE.md` - System architecture
-
-See `../PROJECT_PLAN.md` for the complete implementation guide.
+Status, code map, backlog and changelog: [../PROJECT_PLAN.md](../PROJECT_PLAN.md).

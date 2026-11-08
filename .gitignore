@@ -38,5 +38,5 @@ coverage/
 temp/
 cache/
 
-# Redis
-dump.rdb
+
+

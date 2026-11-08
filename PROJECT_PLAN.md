@@ -1,188 +1,99 @@
-# Liars Game - Project Plan
+# Liars Game — Project Plan & Status
 
-**IMPORTANT: Keep this file up to date as work progresses. Update status after every session.**
+> **Rules, server behaviour and the socket protocol live in [docs/SPEC.md](docs/SPEC.md)** —
+> the single source of truth. Every change goes **spec → code → this plan** (see `CLAUDE.md`).
+> This file tracks status, backlog and history only.
 
-> Rules, server behaviour and the socket protocol live in **[docs/SPEC.md](docs/SPEC.md)** (source of truth).
-> Every change goes spec → code → this plan. See `CLAUDE.md`.
-
----
-
-## Project Overview
-
-**Liars Game** is a multiplayer card bluffing game (2–4 players). Players claim to play the "table card" but may be lying. The next player in turn can challenge with "Call Liar." First to 20+ points with the highest score wins.
-
-**Tech Stack:**
-- Frontend: React + Vite + PWA → **Netlify** (auto-deploys on push to main)
-- Backend: Node.js + Express + Socket.IO → **Render** (⚠️ does NOT auto-deploy — manual deploy required after every backend change)
-- State: Zustand v4
-- In-memory sessions (no database)
-
-**Live:**
-- Frontend: Netlify (auto on push)
-- Backend: Render (manual deploy — "On Commit" setting does not work)
+Last updated: 2026-11-08
 
 ---
 
-## Game Rules
+## Overview
 
-### Cards
-- 1 = Ace (6×), 2 = King (6×), 3 = Queen (6×), 4 = Joker (2×)
-- 20 cards total. Joker always counts as the table card.
+Multiplayer bluffing card game for 2–4 players (see SPEC §1).
 
-### Each Round
-1. Table card chosen at random (Ace, King, or Queen)
-2. Each active player dealt 5 cards
-3. Turn order randomized
-
-### Each Turn
-- Current player plays 1–3 cards face-down, claims they are all the table card
-- **Only the next player in turn order** can Call Liar OR play their own cards
-- Players with empty hands are automatically skipped
-- All other players wait
-
-### Liar Call Resolution
-| Outcome | Accused | Caller | Others |
-|---------|---------|--------|--------|
-| Liar correct (was bluffing) | −1 | +1 + bonus | +1 |
-| Liar wrong (was truthful) | +1 | −1 | +1 |
-
-### No Liar Call (all players empty hands, no challenge)
-- All active players +1 pt, bonus modifier +1 each
-- New round begins automatically
-
-### Bonus Modifier
-- Starts at 0. Increases +1 each round with no liar call.
-- Resets to max(0, current−1) after any liar call.
-- Added to caller's score on a successful liar call.
-
-### Winning
-- First to ≥20 pts with highest score wins
-- Tie-break: only top scorers stay active, others spectate — until one pulls ahead
+| Part | Stack | Hosting |
+|---|---|---|
+| Frontend | React 18 + Vite 5 + Zustand 4, PWA (vite-plugin-pwa) | Netlify — auto-deploys on push to `main` |
+| Backend | Node + Express + Socket.IO 4, in-memory state | Render — **manual deploy** after every backend change |
+| Tests / CI | `node:test` unit + Socket.IO integration tests | GitHub Actions (backend tests + frontend build) |
 
 ---
 
-## File Structure (Current)
+## Code map
 
 ```
-LiarsGame/
-├── frontend/src/
-│   ├── components/
-│   │   ├── Lobby/
-│   │   │   ├── LobbyCreate.jsx       ✅
-│   │   │   ├── LobbyJoin.jsx         ✅
-│   │   │   ├── LobbyRoom.jsx         ✅ (redesigned: avatars, crown, copyable code)
-│   │   │   └── LobbyBrowse.jsx       ✅ (5s timeout, error state)
-│   │   ├── Game/
-│   │   │   ├── GameBoard.jsx         ✅ (vertical layout)
-│   │   │   ├── PlayerHand.jsx        ✅ (face-down toggle)
-│   │   │   ├── PlayerPanel.jsx       ✅ (leaderboard: all players sorted by score)
-│   │   │   ├── CardDisplay.jsx       ✅ (table card banner always visible)
-│   │   │   ├── ActionButtons.jsx     ✅ (correct liar/play logic)
-│   │   │   ├── PlayHistory.jsx       ✅ (scrollable play log)
-│   │   │   ├── CardVisibilityToggle.jsx ✅
-│   │   │   ├── DisconnectBanner.jsx  ✅
-│   │   │   ├── RulesModal.jsx        ✅ (? button opens full rules)
-│   │   │   └── GameWon.jsx           ✅
-│   │   └── Shared/
-│   │       ├── Header.jsx            ✅ (turn indicator: "Your turn" / "Bob's turn")
-│   │       ├── ScoreBoard.jsx        ✅ (exists, not in active layout)
-│   │       ├── NetworkStatus.jsx     ✅
-│   │       ├── SoundToggle.jsx       ✅
-│   │       └── KeyboardShortcutsHelp.jsx ✅
-│   ├── store/
-│   │   ├── gameStore.js              ✅
-│   │   ├── uiStore.js                ✅ (cardsHidden, soundEnabled, disconnectedPlayers)
-│   │   └── socketStore.js            ✅ (game:rejoin on reconnect)
-│   ├── hooks/
-│   │   ├── useGame.js                ✅
-│   │   ├── useSocket.js              ✅
-│   │   ├── useSound.js               ✅
-│   │   ├── useKeyboardShortcuts.js   ✅
-│   │   ├── useTouchGestures.js       ✅
-│   │   └── useHapticFeedback.js      ✅
-│   ├── App.jsx                       ✅
-│   └── AppStyles.css                 ✅
-├── backend/src/
-│   ├── server.js                     ✅
-│   ├── game/
-│   │   ├── GameEngine.js             ✅ (callLiar uses playHistory for accused, nextTurn skips empty hands, resolveNoLiarCall)
-│   │   ├── Player.js                 ✅
-│   │   ├── Deck.js                   ✅
-│   │   └── rules.js                  ✅
-│   ├── store/
-│   │   ├── lobbyStore.js             ✅
-│   │   └── sessionStore.js           ✅
-│   └── events/
-│       ├── lobbyEvents.js            ✅ (disconnectTimers, game:rejoin, lobby:list)
-│       └── gameEvents.js             ✅ (allHandsEmpty check after each play → resolveNoLiarCall + new round)
-└── PROJECT_PLAN.md (this file)
+backend/src/
+  server.js              listener (PORT)
+  app.js                 createApp(): Express + Socket.IO, CORS
+  config.js              timings: grace periods, auto-play delay (env-overridable)
+  game/                  pure game logic — Deck, Player, rules, GameEngine
+  events/lobbyEvents.js  create/join/leave/start/list, presence, rejoin
+  events/gameEvents.js   game:play, game:callLiar
+  events/gameFlow.js     shared progression: round end, victory, auto-play, removal, timed mode
+  store/                 lobbyStore, sessionStore (GameEngine per lobby), presenceStore
+  utils/                 validate, logger, generateLobbyCode
+backend/test/            rules/engine unit tests, socket + presence integration tests
+
+frontend/src/
+  App.jsx                routes by status: lobby | playing | won
+  store/                 gameStore (game state + stored session), uiStore, socketStore (connection + auto-rejoin)
+  hooks/                 useGame (combined), useSocket, useSound, useKeyboardShortcuts, useHapticFeedback
+  pages/                 LobbyPage, GamePage
+  components/Lobby/      LobbyCreate, LobbyJoin, LobbyBrowse, LobbyRoom
+  components/Game/       GameBoard → PokerTable (PlayerSeat, TableCenter, DiscardPile, ScoreStrip,
+                         SelfArea → PlayerHand + ActionButtons + RulesModal), RoundTransition,
+                         GameTimer, GameWon, DisconnectBanner
+  components/Shared/     Header, NetworkStatus, VolumeControl, KeyboardShortcutsHelp
+frontend/public/         manifest.json, icons/, assets/cards, assets/sounds
 ```
 
 ---
 
-## Keyboard Shortcuts (PC)
+## Status — what works
 
-| Key | Action | Condition |
-|-----|--------|-----------|
-| 1–9 | Select card by position | Always |
-| Enter | Play selected cards | Your turn |
-| L | Call Liar | Your turn + history exists |
-| H | Hide/show your cards | Always |
-| S | Toggle sound | Always |
-| C | Copy lobby code | Always |
-
----
-
-## What Works ✅
-
-- Lobby: create, join by code, browse open lobbies, leave
-- LobbyRoom: avatar circles, host crown, empty slots, copyable code block
-- Start game: host starts, all players navigate to game board
-- Cards dealt privately per player (game:hand events)
-- Playing cards: select 1–3, play, history updates
-- Call Liar: only current player can call (when there's a prior play); accused identified from playHistory, not turn order
-- Empty hand skip: players with 0 cards are automatically skipped in nextTurn()
-- No-liar-call resolution: when all hands empty → +1 all, bonus +1, new round auto-starts
-- Table card banner visible at all times in CardDisplay
-- Play history: scrollable log, auto-scrolls to bottom
-- Leaderboard in PlayerPanel: all players ranked by score
-- Turn indicator in Header: "Your turn" / "[Name]'s turn"
-- Rules modal: ? button, full rules explained
-- Card visibility toggle: H key or button, blurs your cards
-- Sound toggle: S key or button
-- Disconnect handling: 30s grace period, rejoin flow, DisconnectBanner
-- Stale card selection cleared on new hand and after successful play
-- Mobile-first vertical layout
-- PWA installable
+- Lobby: create (standard / short / timed), join by code, browse, leave; host transfer.
+- Game: private hands, play 1–3 cards, liar call by the next player, reveal animation,
+  no-liar round resolution, shared bonus pot, tiebreak, timed mode with countdown.
+- Server enforces all turn rules and validates every payload (SPEC §3).
+- Reconnection: auto-rejoin on reconnect and page reload, grace periods in lobby and game,
+  auto-play for a disconnected current player, late-rejoin sees the result (SPEC §2.1).
+- Poker-table UI with card art, sounds + volume, keyboard shortcuts, card hiding, rules modal.
+- PWA installable (manifest + icons + service worker).
+- 38 backend tests; CI on every push.
 
 ---
 
-## Known Issues / Pending Work
+## Backlog
 
-### High Priority
-- [x] **"Cannot call liar on yourself" bug**: Fixed — callLiar identifies accused from playHistory.last (not currentPlayerIndex, which advanced to caller after nextTurn)
-- [x] **No round resolution when all cards played**: Fixed — gameEvents.js checks allHandsEmpty after each play → resolveNoLiarCall() (+1 all, bonus +1) → new round
-- [x] **Empty hand skip**: Fixed — nextTurn() loops past players with hand.length === 0; liar call still correctly targets last player who actually played (via playHistory)
-- [ ] **Tie-break**: Not yet tested. Logic exists in GameEngine.isVictoryConditionMet() but needs play-through.
-- [ ] **Win condition**: game:won event flow needs end-to-end test.
+### UI pass (owner: Lasse)
+- [ ] Show the bonus pot (`gameState.bonus` → `useGame().bonus`).
+- [ ] Spectator view (`players[].spectator`; status `spectating` is never set — decide if needed).
+- [ ] Show disconnected players on their seat (`players[].connected`) and react to
+      `game:autoPlayed`.
+- [ ] Replace `alert()` error popups with in-app toasts.
+- [ ] Remove CSS left over from deleted components in `AppStyles.css`.
+- [ ] Bonus/score reveal: `game:liar:revealed.bonusPaid` is available.
 
-### Medium Priority
-- [ ] **Bonus modifier display**: Not shown to players during game (ScoreBoard.jsx exists but removed from layout). Consider adding bonus to leaderboard row or CardDisplay.
-- [ ] **Sound effects**: Audio files not populated (`/public/assets/sounds/`). useSound.js is wired but files missing → silent.
-- [ ] **Card images**: No actual card art. Cards shown as text/numbers only.
+### Gameplay / backend
+- [ ] Play-test tiebreak and timed-mode tiebreak end to end with real players.
+- [ ] Mid-game joiners currently receive the "+1 for others" on liar calls in the round they
+      sit out (SPEC §1.4 says "every other active player") — decide and spec.
 
-### Low Priority / Nice to Have
-- [ ] **Spectator mode**: Tie-break spectators handled in backend but frontend shows no spectator-specific UI.
-- [ ] **Lobby host transfer**: If host disconnects in lobby, no one can start game.
-- [ ] **Render auto-deploy**: "On Commit" setting broken — must manually deploy after backend changes.
+### Infra
+- [ ] Render auto-deploy ("On Commit" doesn't trigger). Options: Render Deploy Hook called
+      from GitHub Actions on push to `main`, or a `render.yaml` Blueprint.
+- [ ] Free Render instances sleep → first connect can take ~30–60 s. Consider a keep-alive
+      ping or a paid instance before play-tests.
 
 ---
 
-## Infra Notes
+## Infra notes
 
-- **Netlify** auto-deploys on every push to main. Frontend changes go live automatically.
-- **Render** does NOT auto-deploy despite "On Commit" setting. After any backend change: go to Render dashboard → manual deploy.
-- In-memory store: restarting Render clears all active sessions and lobbies.
+- **Netlify** auto-deploys on every push to `main`.
+- **Render** does NOT auto-deploy despite "On Commit": after any backend change go to the
+  Render dashboard → *Manual Deploy*.
+- In-memory store: restarting/redeploying Render ends all active games and lobbies.
 
 ---
 

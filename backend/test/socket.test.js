@@ -114,3 +114,10 @@ test('a socket cannot act in a game it is not part of', async () => {
   assert.equal((await call(outsider, 'game:play', code, [0])).success, false);
   assert.equal((await call(outsider, 'game:callLiar', code)).success, false);
 });
+
+test('CORS_ORIGIN accepts a comma-separated list', () => {
+  const { parseOrigins } = require('../src/app');
+  assert.equal(parseOrigins(undefined), '*');
+  assert.equal(parseOrigins('https://a.app/'), 'https://a.app');
+  assert.deepEqual(parseOrigins('http://localhost:5173, https://a.app'), ['http://localhost:5173', 'https://a.app']);
+});
