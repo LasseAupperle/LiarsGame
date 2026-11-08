@@ -211,3 +211,21 @@ LiarsGame/
   rules/Deck/Player/GameEngine plus Socket.IO integration tests against a real server.
   `server.js` split into `app.js` (`createApp()`) so tests can start it on a random port.
   GitHub Actions runs backend tests + frontend build on every push/PR.
+- **Reconnection overhaul + disconnected-player timer** (SPEC §2.1):
+  - Server tracks each player's *latest* socket; a stale socket's late disconnect no longer
+    starts a grace timer (this kicked actively-playing mobile players after ~2 min).
+  - Waiting-lobby disconnects get a 60 s grace period instead of instant removal
+    (switching apps to share the code used to silently drop you from the lobby).
+  - Disconnected current player: server auto-plays 1 random card after 15 s (`game:autoPlayed`).
+  - `lobby:leave` in a running game removes the player immediately (was a ghost that stalled the game).
+  - Removal no longer shifts the turn to the wrong player; turn passes to next player with cards.
+  - Rejoin works for lobby and game (`phase`), returns settings + `endTime`; removed players
+    can come back (dealt in next round); tiebreak spectators stay spectators; finished games
+    return `ended + winner` for 10 min. Repeated disconnects no longer stack timers.
+  - `connected` flag on players in `lobby:updated` and `gameState`; `lobby:updated` includes `host`.
+  - Client: reconnects forever, auto-rejoins on every reconnect **and on page load**, reconnects
+    when the tab becomes visible, stays on the game screen while reconnecting (banner instead of
+    full-screen "Connecting…"), ack callbacks fail fast while offline, stored session cleared when
+    a game ends.
+  - Backend refactor: `events/gameFlow.js` (round/turn progression shared by all events),
+    `store/presenceStore.js`, `config.js` (timings, overridable via env).

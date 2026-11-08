@@ -16,7 +16,7 @@ class LobbyStore {
 
     this.lobbies[lobbyCode] = {
       code: lobbyCode,
-      players: [{ id: playerId, name: playerName }],
+      players: [{ id: playerId, name: playerName, connected: true }],
       status: 'waiting', // waiting | playing | finished
       createdAt: Date.now(),
       host: playerId,
@@ -43,7 +43,7 @@ class LobbyStore {
       if (lobby.players.length >= 4) {
         return { success: false, message: 'Game is full' };
       }
-      lobby.players.push({ id: playerId, name: playerName });
+      lobby.players.push({ id: playerId, name: playerName, connected: true });
       logger.log(`${playerName} joined running game ${lobbyCode}`);
       return { success: true, lobbyCode, players: lobby.players, joinedRunning: true };
     }
@@ -60,7 +60,7 @@ class LobbyStore {
       return { success: false, message: 'Already in lobby' };
     }
 
-    lobby.players.push({ id: playerId, name: playerName });
+    lobby.players.push({ id: playerId, name: playerName, connected: true });
     logger.log(`${playerName} joined lobby ${lobbyCode}`);
     return { success: true, lobbyCode, players: lobby.players };
   }
@@ -105,6 +105,27 @@ class LobbyStore {
     lobby.status = 'playing';
     logger.log(`Game started in lobby ${lobbyCode} with ${lobby.players.length} players`);
     return { success: true, players: lobby.players, settings: lobby.settings };
+  }
+
+  /** Mark a lobby player's connection state (SPEC §2.1). */
+  setConnected(lobbyCode, playerId, connected) {
+    const player = this.lobbies[lobbyCode]?.players.find(p => p.id === playerId);
+    if (player) player.connected = connected;
+  }
+
+  /** Re-add a player removed from a running game who rejoined. */
+  restorePlayer(lobbyCode, playerId, playerName) {
+    const lobby = this.lobbies[lobbyCode];
+    if (lobby && !lobby.players.some(p => p.id === playerId)) {
+      lobby.players.push({ id: playerId, name: playerName, connected: true });
+    }
+  }
+
+  /** Payload for lobby:updated */
+  getLobbyView(lobbyCode) {
+    const lobby = this.lobbies[lobbyCode];
+    if (!lobby) return null;
+    return { lobbyCode, host: lobby.host, players: lobby.players, settings: lobby.settings };
   }
 
   getLobby(lobbyCode) {

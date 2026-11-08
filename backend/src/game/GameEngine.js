@@ -212,16 +212,55 @@ class GameEngine {
   }
 
   /**
-   * Remove a player mid-game (disconnect timeout)
+   * Remove a player mid-game (grace period expired or left) — SPEC §2.1.
+   * They become a spectator and keep their score. The current turn stays with the
+   * same player, or passes to the next player holding cards if the removed player
+   * was current.
    * @param {string} playerId
    */
   removePlayer(playerId) {
     const player = this.players.find(p => p.id === playerId);
-    if (player) player.spectator = true;
-    this.turnOrder = this.turnOrder.filter(id => id !== playerId);
-    if (this.currentPlayerIndex >= this.turnOrder.length) {
-      this.currentPlayerIndex = 0;
+    if (player) {
+      player.spectator = true;
+      player.left = true;
     }
+    const idx = this.turnOrder.indexOf(playerId);
+    if (idx === -1) return;
+
+    const wasCurrent = idx === this.currentPlayerIndex;
+    this.turnOrder.splice(idx, 1);
+    if (idx < this.currentPlayerIndex) this.currentPlayerIndex--;
+    if (this.currentPlayerIndex >= this.turnOrder.length) this.currentPlayerIndex = 0;
+
+    // After the splice the index already points at the following player
+    if (wasCurrent && this.turnOrder.length > 0 && !this.currentHasCards()) {
+      this.nextTurn();
+    }
+  }
+
+  /**
+   * Bring a removed player back (rejoin after grace period). They sit out the
+   * current round and are dealt in from the next one, like a mid-game join.
+   */
+  restorePlayer(playerId) {
+    const player = this.players.find(p => p.id === playerId);
+    if (!player || !player.left) return;
+    player.left = false;
+    player.clearHand();
+    // In a tiebreak only the top scorers play; everyone else keeps watching
+    const threshold = this.timedThreshold ?? this.settings.scoreThreshold;
+    const tiebreak = this.timedThreshold !== null || shouldEnterTiebreak(this.players, threshold);
+    player.spectator = tiebreak && !getActivePlayers(this.players, threshold).includes(player);
+  }
+
+  currentHasCards() {
+    const current = this.players.find(p => p.id === this.turnOrder[this.currentPlayerIndex]);
+    return !!current && current.hand.length > 0;
+  }
+
+  /** True when no active player holds cards (round over without a liar call). */
+  allHandsEmpty() {
+    return this.players.filter(p => !p.spectator).every(p => p.hand.length === 0);
   }
 
   /**

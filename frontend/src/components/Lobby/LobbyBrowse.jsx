@@ -8,7 +8,7 @@ export default function LobbyBrowse({ onBack, onJoinWithCode }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [rejoinable, setRejoinable] = useState(null); // { lobbyCode, playerId, playerName } | null
-  const { emit, connected, setPlayerId, setPlayerName, setGameCode, acceptGameState, setStatus, setMyHand, saveSession } = useGame();
+  const { emit, connected, setPlayerId, setPlayerName, setGameCode, acceptGameState, setStatus, setMyHand, saveSession, setPlayers, setGameSettings } = useGame();
   const timeoutRef = useRef(null);
 
   const fetchLobbies = () => {
@@ -60,9 +60,15 @@ export default function LobbyBrowse({ onBack, onJoinWithCode }) {
         setPlayerName(rejoinable.playerName);
         setPlayerId(rejoinable.playerId);
         setGameCode(rejoinable.gameCode);
-        acceptGameState(res.gameState);
-        if (res.hand) setMyHand(res.hand);
-        setStatus('playing');
+        if (res.phase === 'lobby') {
+          setPlayers(res.players || []);
+          setStatus('lobby');
+        } else {
+          acceptGameState(res.gameState);
+          if (res.hand) setMyHand(res.hand);
+          if (res.settings) setGameSettings(res.settings, res.endTime || null);
+          setStatus('playing');
+        }
         saveSession();
       } else {
         localStorage.removeItem(SESSION_KEY);

@@ -10,6 +10,8 @@ class Player {
     this.mainScore = 0;          // Primary score (round wins)
     this.spectator = false;      // True if in tie-break and not top scorer
     this.cardsPlayedCount = 0;   // Cards played in current turn
+    this.connected = true;       // Has a live socket (SPEC §2.1)
+    this.left = false;           // Removed after grace period / left the game
   }
 
   addCard(card) {
@@ -52,6 +54,7 @@ class Player {
       name: this.name,
       mainScore: this.mainScore,
       spectator: this.spectator,
+      connected: this.connected,
       cardsLeft: this.hand.length,
       cardsPlayedCount: this.cardsPlayedCount
     };

@@ -133,3 +133,39 @@ test('gameState never contains hands and exposes the pot', () => {
   assert.ok(state.players.every(p => !('hand' in p)));
   assert.deepEqual(state.players.map(p => p.cardsLeft), [2, 1]);
 });
+
+test('removePlayer before the current player keeps the turn with the same player', () => {
+  const { engine } = makeEngine([[1], [1], [1]]);
+  engine.currentPlayerIndex = 2; // p2's turn
+  engine.removePlayer('p0');
+  assert.equal(engine.getGameState().currentPlayerId, 'p2');
+});
+
+test('removing the current player passes the turn to the next player with cards', () => {
+  const { engine } = makeEngine([[1], [1], [], [1]]);
+  engine.currentPlayerIndex = 1; // p1's turn, p2 has no cards
+  engine.removePlayer('p1');
+  assert.equal(engine.getGameState().currentPlayerId, 'p3');
+  const p1 = engine.players.find(p => p.id === 'p1');
+  assert.equal(p1.spectator, true);
+  assert.equal(p1.left, true);
+});
+
+test('restored player sits out the round; tiebreak spectators stay spectators', () => {
+  const { engine, players } = makeEngine([[1, 1], [1], [1]]);
+  engine.removePlayer('p0');
+  engine.restorePlayer('p0');
+  assert.equal(players[0].spectator, false);
+  assert.equal(players[0].hand.length, 0, 'dealt in from next round');
+
+  players[1].mainScore = 21; players[2].mainScore = 21; players[0].mainScore = 5;
+  engine.removePlayer('p0');
+  engine.restorePlayer('p0');
+  assert.equal(players[0].spectator, true, 'not a top scorer during tiebreak');
+});
+
+test('connected flag is part of the public player state', () => {
+  const { engine, players } = makeEngine([[1], [1]]);
+  players[1].connected = false;
+  assert.deepEqual(engine.getGameState().players.map(p => p.connected), [true, false]);
+});

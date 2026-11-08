@@ -52,7 +52,12 @@ const useUIStore = create((set) => ({
   toggleCardsHidden: () => set((state) => ({ cardsHidden: !state.cardsHidden })),
 
   addDisconnectedPlayer: (player) =>
-    set((state) => ({ disconnectedPlayers: [...state.disconnectedPlayers, player] })),
+    set((state) => ({
+      disconnectedPlayers: [
+        ...state.disconnectedPlayers.filter(p => p.playerId !== player.playerId),
+        player
+      ]
+    })),
 
   removeDisconnectedPlayer: (playerId) =>
     set((state) => ({

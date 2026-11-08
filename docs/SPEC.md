@@ -86,12 +86,40 @@ Status markers: **[OPEN]** = decision pending, not yet specified.
 - A lobby with no players is deleted.
 - **Joining a running game:** allowed while fewer than 4 players. The new player
   sits out the current round (no cards) and is dealt in from the next round.
-- **Disconnect during a game:** the player has a 120 s grace period. Within it they
-  can rejoin with `(lobbyCode, playerId)` and get the full state and their hand
-  back. When the grace period expires they are removed from turn order (become spectator). If
-  ≤ 1 player remains in turn order, the game ends and that player (if any) wins.
-- **Disconnect in a waiting lobby:** the player is removed immediately.
 - All state is in memory; a server restart ends every game.
+
+### 2.1 Presence, disconnects & rejoin
+- A player's identity is their `playerId` (a secret UUID returned on create/join,
+  stored by the client). One player may have several sockets over time; only the
+  **most recent** socket counts. A disconnect of an older socket is ignored (mobile
+  clients often reconnect before the old socket times out).
+- Each player has a `connected` flag, visible to everyone (lobby `players` and
+  `gameState.players`).
+- **Disconnect in a waiting lobby:** the player stays in the lobby, marked
+  disconnected, for a **60 s** grace period, then is removed (host passes on as
+  usual). If the game starts during that window, they are dealt in and the in-game
+  grace period starts.
+- **Disconnect during a game:** **120 s** grace period. While disconnected, whenever
+  it is their turn the server **auto-plays one random card** for them after **15 s**,
+  announced with `game:autoPlayed`. Connected players have no turn limit.
+- **Grace period expires, or the player leaves a running game (`lobby:leave`):** the
+  player is removed from turn order and becomes a spectator, keeping their score.
+  - If ≤ 1 player remains in turn order, the game ends; that player (if any) wins.
+  - If the removed player was the current player, the turn passes to the next
+    player in order who holds cards.
+  - If no remaining active player holds cards, the round ends without scoring and
+    a new round starts.
+- **Rejoin** (`game:rejoin` with `lobbyCode, playerId`) works in both phases:
+  - waiting lobby → `phase: 'lobby'`, the lobby's players and settings;
+  - running game → `phase: 'game'`, full `gameState`, own hand, settings, `endTime`.
+  - A player removed after their grace period may rejoin a still-running game: they
+    are dealt back in from the next round (like a mid-game join), keeping their score.
+  - A tiebreak spectator stays a spectator after rejoining.
+  - If the game finished within the last 10 minutes the response is
+    `{ success: false, ended: true, winner }` so the client can show the result.
+- **Client behaviour:** reconnect forever (backoff ≤ 5 s); on every (re)connect,
+  and on app load when a stored session exists, call `game:rejoin` automatically.
+  On failure, clear the stored session and return to the main menu.
 
 ---
 
@@ -126,23 +154,24 @@ which receives `{ success: boolean, message?: string, ... }`.
 |---|---|---|
 | `lobby:create` | `playerName, settings{mode, timedMinutes}` | `lobbyCode, playerId, players` |
 | `lobby:join` | `lobbyCode, playerName` | `lobbyCode, playerId, players` or `joinedRunning: true` |
-| `lobby:leave` | — | — |
+| `lobby:leave` | — (in a running game: leave immediately, see §2.1) | — |
 | `lobby:start` | — (host only) | `gameState, settings, endTime` |
 | `lobby:list` | — | `lobbies[{code, playerCount, maxPlayers, status, roundNumber}]` |
 | `game:checkRejoin` | `{lobbyCode, playerId}` | `{canRejoin}` |
-| `game:rejoin` | `lobbyCode, playerId` | `gameState, hand` |
+| `game:rejoin` | `lobbyCode, playerId` | `phase:'lobby'`: `lobbyCode, players, host, settings` · `phase:'game'`: `gameState, hand, settings, endTime` · finished: `{success:false, ended:true, winner}` |
 | `game:play` | `lobbyCode, cardIndices[]` | `gameState` |
 | `game:callLiar` | `lobbyCode` | `gameState` |
 
 ### 4.2 Server → client
 | Event | Payload | Audience |
 |---|---|---|
-| `lobby:updated` | `{lobbyCode, players}` | lobby |
+| `lobby:updated` | `{lobbyCode, host, players[{id, name, connected}]}` | lobby |
 | `game:started` | `{lobbyCode, gameState, settings, endTime}` | lobby |
 | `game:state` | `gameState` (see 4.3) | lobby |
 | `game:hand` | `number[]` (own hand only) | single player |
 | `game:liar:revealed` | `{truthful, isLiarCorrect, cardsPlayed, accusedName, callerName, scoreDeltas, scores, bonusPaid}` | lobby |
 | `game:round:noLiar` | `{scores, scoreDeltas}` | lobby |
+| `game:autoPlayed` | `{playerId, playerName}` — server played for a disconnected player | lobby |
 | `game:timeUp` | `{tiebreak, gameState}` | lobby |
 | `game:won` | `{winnerId, winnerName, finalScore}` | lobby |
 | `player:disconnected` | `{playerId, playerName, timeoutMs}` | lobby |
@@ -158,7 +187,7 @@ which receives `{ success: boolean, message?: string, ... }`.
   roundNumber, winningCard, currentPlayerId, turnOrder, settings,
   playHistory: [{ playerId, playerName, cardsPlayed, claim }],
   bonus,                       // shared bonus pot (§1.6)
-  players: [{ id, name, mainScore, spectator, cardsLeft, cardsPlayedCount }]
+  players: [{ id, name, mainScore, spectator, connected, cardsLeft, cardsPlayedCount }]
 }
 ```
 Hands are never included in `gameState`; each player receives only their own hand

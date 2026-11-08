@@ -1,25 +1,15 @@
 /**
- * gameEvents.js - Socket.IO in-game event handlers
+ * gameEvents.js - Socket.IO in-game event handlers (SPEC §3, §4)
  */
 
 const sessionStore = require('../store/sessionStore');
-const lobbyStore = require('../store/lobbyStore');
 const logger = require('../utils/logger');
 const validate = require('../utils/validate');
+const flow = require('./gameFlow');
 
 const cb = (callback, data) => {
   if (typeof callback === 'function') callback(data);
 };
-
-async function emitPrivateHands(io, lobbyCode, gameEngine) {
-  const sockets = await io.in(lobbyCode).fetchSockets();
-  for (const s of sockets) {
-    const player = gameEngine.players.find(p => p.id === s.data.playerId);
-    if (player) {
-      s.emit('game:hand', player.hand);
-    }
-  }
-}
 
 /**
  * Resolve the game for an in-game event and check the sender belongs to it.
@@ -39,7 +29,7 @@ function resolveGame(socket, rawLobbyCode) {
 
 module.exports = (io) => {
   io.on('connection', (socket) => {
-    socket.on('game:play', async (rawLobbyCode, cardsIndices, callback) => {
+    socket.on('game:play', async (rawLobbyCode, cardIndices, callback) => {
       try {
         const ctx = resolveGame(socket, rawLobbyCode);
         if (ctx.error) {
@@ -48,59 +38,17 @@ module.exports = (io) => {
         }
         const { gameEngine, playerId, lobbyCode } = ctx;
 
-        const result = gameEngine.playTurn(playerId, cardsIndices);
+        const result = gameEngine.playTurn(playerId, cardIndices);
         if (!result.success) {
           cb(callback, result);
           return;
         }
 
-        // Emit updated hand to the player who just played
         const player = gameEngine.players.find(p => p.id === playerId);
-        if (player) {
-          socket.emit('game:hand', player.hand);
-        }
+        socket.emit('game:hand', player.hand);
 
-        // Check if all active players have empty hands — no liar call round end
-        const activePlayers = gameEngine.players.filter(p => !p.spectator);
-        const allHandsEmpty = activePlayers.every(p => p.hand.length === 0);
-
-        if (allHandsEmpty) {
-          const noLiarDeltas = gameEngine.resolveNoLiarCall();
-
-          const activePlayers = gameEngine.players.filter(p => !p.spectator);
-          io.to(lobbyCode).emit('game:round:noLiar', {
-            scores: activePlayers.map(p => ({ id: p.id, name: p.name, mainScore: p.mainScore })),
-            scoreDeltas: noLiarDeltas,
-          });
-
-          const winner = gameEngine.isVictoryConditionMet();
-          if (winner) {
-            io.to(lobbyCode).emit('game:won', {
-              winnerId: winner.id,
-              winnerName: winner.name,
-              finalScore: winner.mainScore
-            });
-            sessionStore.deleteSession(lobbyCode);
-            lobbyStore.deleteLobby(lobbyCode);
-            cb(callback, { success: true });
-            return;
-          }
-
-          gameEngine.startRound();
-          lobbyStore.updateRoundNumber(lobbyCode, gameEngine.roundNumber);
-          const newRoundState = gameEngine.getGameState();
-          io.to(lobbyCode).emit('game:state', newRoundState);
-          await emitPrivateHands(io, lobbyCode, gameEngine);
-          cb(callback, { success: true, gameState: newRoundState });
-          return;
-        }
-
-        gameEngine.nextTurn();
-
-        const gameState = gameEngine.getGameState();
-        io.to(lobbyCode).emit('game:state', gameState);
-
-        cb(callback, { success: true, gameState });
+        const gameState = await flow.afterPlay(io, lobbyCode, gameEngine);
+        cb(callback, gameState ? { success: true, gameState } : { success: true });
       } catch (error) {
         logger.error('Error playing turn', error);
         cb(callback, { success: false, message: 'Server error' });
@@ -123,7 +71,6 @@ module.exports = (io) => {
         }
 
         const { truthful, isLiarCorrect, cardsPlayed, scoreDeltas, accusedId, bonusPaid } = result.result;
-
         const accusedPlayer = gameEngine.players.find(p => p.id === accusedId);
         const callerPlayer = gameEngine.players.find(p => p.id === playerId);
 
@@ -140,26 +87,8 @@ module.exports = (io) => {
             .map(p => ({ id: p.id, name: p.name, mainScore: p.mainScore }))
         });
 
-        const winner = gameEngine.isVictoryConditionMet();
-        if (winner) {
-          io.to(lobbyCode).emit('game:won', {
-            winnerId: winner.id,
-            winnerName: winner.name,
-            finalScore: winner.mainScore
-          });
-          sessionStore.deleteSession(lobbyCode);
-          lobbyStore.deleteLobby(lobbyCode);
-          cb(callback, { success: true });
-          return;
-        }
-
-        gameEngine.startRound();
-        lobbyStore.updateRoundNumber(lobbyCode, gameEngine.roundNumber);
-        const gameState = gameEngine.getGameState();
-        io.to(lobbyCode).emit('game:state', gameState);
-        await emitPrivateHands(io, lobbyCode, gameEngine);
-
-        cb(callback, { success: true, gameState });
+        const gameState = await flow.startNextRoundOrEnd(io, lobbyCode, gameEngine);
+        cb(callback, gameState ? { success: true, gameState } : { success: true });
       } catch (error) {
         logger.error('Error calling liar', error);
         cb(callback, { success: false, message: 'Server error' });

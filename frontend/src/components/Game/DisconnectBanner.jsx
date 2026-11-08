@@ -10,7 +10,7 @@ export default function DisconnectBanner() {
       {disconnectedPlayers.map(p => (
         <div key={p.playerId} className="disconnect-banner-item">
           <span className="disconnect-icon">⚠️</span>
-          <span>{p.playerName} disconnected — 30s to rejoin</span>
+          <span>{p.playerName} disconnected — {Math.round((p.timeoutMs ?? 120000) / 1000)}s to rejoin</span>
         </div>
       ))}
     </div>

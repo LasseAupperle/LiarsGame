@@ -6,9 +6,12 @@ import GameWon from './components/Game/GameWon';
 import './AppStyles.css';
 
 function App() {
-  const { status, connected, winner } = useGame();
+  const { status, connected, winner, gameCode } = useGame();
 
-  if (!connected) {
+  // Only block the screen before we're in a lobby/game. Mid-game, a dropped
+  // connection shows the NetworkStatus banner and the game stays mounted while
+  // the socket reconnects and rejoins (SPEC §2.1).
+  if (!connected && !gameCode) {
     return (
       <div className="lobby-page">
         <div className="lobby-container">

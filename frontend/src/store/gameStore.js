@@ -47,7 +47,11 @@ const useGameStore = create((set, get) => ({
   setRoundNumber: (num) => set({ roundNumber: num }),
   setTurnOrder: (order) => set({ turnOrder: order }),
   setMyHand: (hand) => set({ myHand: hand }),
-  setWinner: (winner) => set({ winner }),
+  // A finished game can't be rejoined: drop the stored session so a reload goes to the menu
+  setWinner: (winner) => {
+    localStorage.removeItem(SESSION_KEY);
+    set({ winner });
+  },
   setGameSettings: (settings, endTime = null) => set({ gameSettings: settings, gameEndTime: endTime }),
 
   acceptGameState: (gameData) =>
