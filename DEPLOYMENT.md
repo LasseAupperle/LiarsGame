@@ -3,7 +3,7 @@
 | Part | Host | Deploys |
 |---|---|---|
 | Frontend | Netlify | Automatically on push to `main` |
-| Backend | Render (Web Service) | **Manually** — Render's "On Commit" auto-deploy does not trigger for this repo |
+| Backend | Render (Web Service) | Via GitHub Actions (`deploy-backend.yml`) once the deploy-hook secret is set; otherwise manually |
 
 All game state is in memory: every backend deploy or restart ends all running games and lobbies.
 Deploy the backend when nobody is playing.
@@ -23,7 +23,16 @@ Deploy the backend when nobody is playing.
    ```
    `CORS_ORIGIN` takes a comma-separated list (no trailing slashes), e.g. to allow a
    preview domain as well. Render sets `PORT` itself.
-4. After every backend change: Render dashboard → service → **Manual Deploy → Deploy latest commit**.
+4. **Auto-deploy via GitHub Actions** (Render's own "On Commit" doesn't trigger for this repo):
+   - Render → service → Settings → **Deploy Hook** → copy the URL.
+   - GitHub → repo → Settings → Secrets and variables → Actions → **New repository secret**
+     `RENDER_DEPLOY_HOOK_URL` = that URL.
+   - From then on every push to `main` that touches `backend/` runs the tests and, if they
+     pass, triggers a Render deploy. You can also run it by hand: Actions → *Deploy backend* →
+     *Run workflow*. Set Render's own Auto-Deploy to **Off** to avoid double deploys.
+   - Without the secret the workflow just warns; deploy manually: Render dashboard →
+     **Manual Deploy → Deploy latest commit**.
+   - ⚠️ A deploy ends all running games — don't merge backend changes to `main` mid-play-test.
 
 Free instances sleep after ~15 min idle; the first connection then takes 30–60 s
 (the app shows "Connecting…" meanwhile). Open the site a minute before a play-test.
@@ -52,4 +61,5 @@ Expected: `{"status":"ok","timestamp":"…"}`. Then run through [PRODUCTION_CHEC
   slash) must be in `CORS_ORIGIN`; check the browser console and Render logs.
 - **Old UI after deploy:** the service worker serves the cached build until it updates —
   reload twice, or clear site data / reinstall the PWA.
-- **Backend change not live:** you forgot the manual Render deploy.
+- **Backend change not live:** check the *Deploy backend* workflow run in GitHub Actions
+  (failed tests or missing secret), or deploy manually in Render.

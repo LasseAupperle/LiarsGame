@@ -14,7 +14,8 @@
 - [ ] Keyboard: 1–5, Enter, L, H, S, C
 
 ## Deploy
-- [ ] Backend: Render → Manual Deploy (nobody playing — deploy ends running games)
+- [ ] Backend: merging to `main` triggers *Deploy backend* (or Render → Manual Deploy) —
+      only when nobody is playing, a deploy ends running games
 - [ ] Frontend: push to `main` (Netlify builds automatically)
 - [ ] `curl https://<backend>/health` returns ok
 

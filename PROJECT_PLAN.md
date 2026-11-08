@@ -15,7 +15,7 @@ Multiplayer bluffing card game for 2–4 players (see SPEC §1).
 | Part | Stack | Hosting |
 |---|---|---|
 | Frontend | React 18 + Vite 5 + Zustand 4, PWA (vite-plugin-pwa) | Netlify — auto-deploys on push to `main` |
-| Backend | Node + Express + Socket.IO 4, in-memory state | Render — **manual deploy** after every backend change |
+| Backend | Node + Express + Socket.IO 4, in-memory state | Render — deployed by GitHub Actions via deploy hook (needs secret, see DEPLOYMENT.md) |
 | Tests / CI | `node:test` unit + Socket.IO integration tests | GitHub Actions (backend tests + frontend build) |
 
 ---
@@ -81,8 +81,8 @@ frontend/public/         manifest.json, icons/, assets/cards, assets/sounds
       sit out (SPEC §1.4 says "every other active player") — decide and spec.
 
 ### Infra
-- [ ] Render auto-deploy ("On Commit" doesn't trigger). Options: Render Deploy Hook called
-      from GitHub Actions on push to `main`, or a `render.yaml` Blueprint.
+- [ ] Add the `RENDER_DEPLOY_HOOK_URL` secret in GitHub (workflow is ready, see DEPLOYMENT.md)
+      and turn Render's own Auto-Deploy off.
 - [ ] Free Render instances sleep → first connect can take ~30–60 s. Consider a keep-alive
       ping or a paid instance before play-tests.
 
@@ -91,8 +91,9 @@ frontend/public/         manifest.json, icons/, assets/cards, assets/sounds
 ## Infra notes
 
 - **Netlify** auto-deploys on every push to `main`.
-- **Render** does NOT auto-deploy despite "On Commit": after any backend change go to the
-  Render dashboard → *Manual Deploy*.
+- **Render**: its own "On Commit" never triggered. `.github/workflows/deploy-backend.yml` runs
+  the tests and calls a Render Deploy Hook on pushes to `main` touching `backend/` — once the
+  `RENDER_DEPLOY_HOOK_URL` secret is set. Until then: Render dashboard → *Manual Deploy*.
 - In-memory store: restarting/redeploying Render ends all active games and lobbies.
 
 ---
@@ -150,3 +151,7 @@ frontend/public/         manifest.json, icons/, assets/cards, assets/sounds
     unused `axios` / `redis` dependencies. Their CSS in `AppStyles.css` is left for the UI pass.
   - Bonus pot, spectator and connection state are available to the UI via the store
     (`bonus`, `players[].spectator`, `players[].connected`) — display is part of the UI pass.
+- **Docs rewrite:** README, DEPLOYMENT, PRODUCTION_CHECKLIST, sub-READMEs and env examples now
+  match the code; this plan is status/backlog/changelog only, rules live in SPEC.
+  `CORS_ORIGIN` now really accepts a comma-separated list (and also applies to Express).
+- **Backend auto-deploy:** `deploy-backend.yml` (tests → Render Deploy Hook) on push to `main`.

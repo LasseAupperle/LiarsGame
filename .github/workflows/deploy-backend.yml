@@ -1,0 +1,45 @@
+name: Deploy backend
+
+# Render's "On Commit" auto-deploy doesn't trigger for this repo, so we call a
+# Render Deploy Hook after the backend tests pass on main.
+# Setup: Render → service → Settings → Deploy Hook → copy URL →
+#        GitHub → repo Settings → Secrets and variables → Actions →
+#        New repository secret RENDER_DEPLOY_HOOK_URL.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'backend/**'
+      - '.github/workflows/deploy-backend.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-backend
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+      - name: Test
+        working-directory: backend
+        run: |
+          npm ci
+          npm test
+      - name: Trigger Render deploy
+        env:
+          HOOK: ${{ secrets.RENDER_DEPLOY_HOOK_URL }}
+        run: |
+          if [ -z "$HOOK" ]; then
+            echo "::warning::RENDER_DEPLOY_HOOK_URL secret not set — skipping deploy (deploy manually in Render)."
+            exit 0
+          fi
+          curl -fsS -X POST "$HOOK" > /dev/null
+          echo "Render deploy triggered."
