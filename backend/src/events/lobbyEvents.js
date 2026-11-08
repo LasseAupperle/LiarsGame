@@ -81,10 +81,11 @@ module.exports = (io) => {
         }
 
         attach(socket, lobbyCode, playerId, playerName);
+        const token = presenceStore.issueToken(playerId);
         emitLobbyUpdate(io, lobbyCode);
 
         const lobby = lobbyStore.getLobby(lobbyCode);
-        cb(callback, { success: true, lobbyCode, playerId, players: lobby.players, host: lobby.host });
+        cb(callback, { success: true, lobbyCode, playerId, token, players: lobby.players, host: lobby.host });
       } catch (error) {
         logger.error('Error creating lobby', error);
         cb(callback, { success: false, message: 'Server error' });
@@ -112,6 +113,7 @@ module.exports = (io) => {
         }
 
         attach(socket, lobbyCode, playerId, playerName);
+        const token = presenceStore.issueToken(playerId);
 
         if (result.joinedRunning) {
           // Mid-game join: sits out this round, dealt in from the next (SPEC §2)
@@ -121,13 +123,13 @@ module.exports = (io) => {
             socket.emit('game:hand', []);
             flow.broadcastState(io, lobbyCode, gameEngine);
           }
-          cb(callback, { success: true, lobbyCode, playerId, joinedRunning: true });
+          cb(callback, { success: true, lobbyCode, playerId, token, joinedRunning: true });
           return;
         }
 
         emitLobbyUpdate(io, lobbyCode);
         const lobby = lobbyStore.getLobby(lobbyCode);
-        cb(callback, { success: true, lobbyCode, playerId, players: lobby.players, host: lobby.host });
+        cb(callback, { success: true, lobbyCode, playerId, token, players: lobby.players, host: lobby.host });
       } catch (error) {
         logger.error('Error joining lobby', error);
         cb(callback, { success: false, message: 'Server error' });
@@ -235,8 +237,8 @@ module.exports = (io) => {
     socket.on('game:checkRejoin', (payload, callback) => {
       try {
         const lobbyCode = validate.lobbyCode(payload?.lobbyCode);
-        const playerId = payload?.playerId;
-        if (!lobbyCode || !validate.isString(playerId)) {
+        const playerId = presenceStore.resolveToken(payload?.token);
+        if (!lobbyCode || !playerId) {
           cb(callback, { canRejoin: false });
           return;
         }
@@ -251,11 +253,16 @@ module.exports = (io) => {
       }
     });
 
-    socket.on('game:rejoin', (rawCode, playerId, callback) => {
+    socket.on('game:rejoin', (rawCode, token, callback) => {
       try {
         const lobbyCode = validate.lobbyCode(rawCode);
-        if (!lobbyCode || !validate.isString(playerId)) {
-          cb(callback, { success: false, message: 'Invalid rejoin request' });
+        const playerId = presenceStore.resolveToken(token);
+        if (!lobbyCode || !playerId) {
+          // Unknown token: maybe the game finished, otherwise the session is gone
+          const finished = lobbyCode && flow.getFinishedGame(lobbyCode);
+          cb(callback, finished
+            ? { success: false, ended: true, winner: finished.winner, message: 'Game has ended' }
+            : { success: false, message: 'Session expired' });
           return;
         }
 
@@ -289,6 +296,7 @@ module.exports = (io) => {
 
           cb(callback, {
             success: true,
+            playerId,
             phase: 'game',
             gameState,
             hand: player.hand,
@@ -304,7 +312,7 @@ module.exports = (io) => {
           attach(socket, lobbyCode, playerId, lobbyPlayer.name);
           lobbyStore.setConnected(lobbyCode, playerId, true);
           emitLobbyUpdate(io, lobbyCode);
-          cb(callback, { success: true, phase: 'lobby', ...lobbyStore.getLobbyView(lobbyCode) });
+          cb(callback, { success: true, playerId, phase: 'lobby', ...lobbyStore.getLobbyView(lobbyCode) });
           return;
         }
 

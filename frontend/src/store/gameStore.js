@@ -9,7 +9,8 @@ const SESSION_KEY = 'lg_session';
 const useGameStore = create((set, get) => ({
   // Game state
   gameCode: null,
-  playerId: null,
+  playerId: null,      // public id (visible to everyone)
+  sessionToken: null,  // secret rejoin token (SPEC §2.1) — never share
   playerName: null,
   status: 'lobby', // lobby | playing | won | spectating
 
@@ -39,6 +40,7 @@ const useGameStore = create((set, get) => ({
   // Actions
   setGameCode: (code) => set({ gameCode: code }),
   setPlayerId: (id) => set({ playerId: id }),
+  setSessionToken: (token) => set({ sessionToken: token }),
   setPlayerName: (name) => set({ playerName: name }),
   setStatus: (status) => set({ status }),
   setPlayers: (players) => set({ players }),
@@ -73,9 +75,9 @@ const useGameStore = create((set, get) => ({
   clearHistory: () => set({ history: [] }),
 
   saveSession: () => {
-    const { gameCode, playerId, playerName } = get();
-    if (gameCode && playerId && playerName) {
-      localStorage.setItem(SESSION_KEY, JSON.stringify({ gameCode, playerId, playerName }));
+    const { gameCode, playerId, sessionToken, playerName } = get();
+    if (gameCode && sessionToken && playerName) {
+      localStorage.setItem(SESSION_KEY, JSON.stringify({ gameCode, playerId, sessionToken, playerName }));
     }
   },
 
@@ -88,6 +90,7 @@ const useGameStore = create((set, get) => ({
     set({
       gameCode: null,
       playerId: null,
+      sessionToken: null,
       playerName: null,
       status: 'lobby',
       players: [],

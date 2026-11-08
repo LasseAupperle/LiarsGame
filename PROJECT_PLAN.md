@@ -103,6 +103,11 @@ frontend/public/         manifest.json, icons/, assets/cards, assets/sounds
 - **Round participants** (SPEC §1.2): only players dealt into a round score from it — mid-game
   joiners and restored players no longer get "+1 for others" while sitting out. Turn order now
   uses an unbiased Fisher-Yates shuffle (was `sort(() => Math.random() - 0.5)`).
+- **Security: secret rejoin token** (SPEC §2.1). `playerId` is broadcast to everyone, yet it
+  was also the only credential for `game:rejoin` — any player could take over another's seat
+  and see their hand. Create/join now return a separate secret `token`; rejoin and
+  checkRejoin take the token. Leaving on purpose invalidates it. Old stored sessions (without
+  a token) simply go back to the menu.
 
 ### 2026-11-08
 - Added `docs/SPEC.md` (source of truth) and `CLAUDE.md` (spec-first workflow).

@@ -10,7 +10,7 @@ export default function LobbyJoin({ onBack, initialCode = '' }) {
   const [lobbyCode, setLobbyCode] = useState(initialCode);
   const [playerName, setPlayerName] = useState('');
   const [loading, setLoading] = useState(false);
-  const { emit, setPlayerId, setPlayerName: setGamePlayerName, setGameCode, setStatus, setPlayers, saveSession, acceptGameState, setMyHand, setGameSettings } = useGame();
+  const { emit, setPlayerId, setSessionToken, setPlayerName: setGamePlayerName, setGameCode, setStatus, setPlayers, saveSession, acceptGameState, setMyHand, setGameSettings } = useGame();
 
   const handleJoinLobby = (e) => {
     e.preventDefault();
@@ -26,11 +26,12 @@ export default function LobbyJoin({ onBack, initialCode = '' }) {
 
       setGamePlayerName(playerName);
       setPlayerId(response.playerId);
+      setSessionToken(response.token);
       setGameCode(response.lobbyCode);
 
       if (response.joinedRunning) {
         // Mid-game join: fetch current state via rejoin
-        emit('game:rejoin', response.lobbyCode, response.playerId, (rejoinRes) => {
+        emit('game:rejoin', response.lobbyCode, response.token, (rejoinRes) => {
           if (rejoinRes.success) {
             acceptGameState(rejoinRes.gameState);
             if (rejoinRes.hand) setMyHand(rejoinRes.hand);

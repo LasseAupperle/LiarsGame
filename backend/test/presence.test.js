@@ -43,8 +43,13 @@ async function lobbyWith(n) {
   const created = await call(socks[0], 'lobby:create', 'P0', {});
   const code = created.lobbyCode;
   const ids = [created.playerId];
-  for (let i = 1; i < n; i++) ids.push((await call(socks[i], 'lobby:join', code, `P${i}`)).playerId);
-  return { code, socks, ids };
+  const tokens = [created.token];
+  for (let i = 1; i < n; i++) {
+    const joined = await call(socks[i], 'lobby:join', code, `P${i}`);
+    ids.push(joined.playerId);
+    tokens.push(joined.token);
+  }
+  return { code, socks, ids, tokens };
 }
 
 async function gameWith(n) {
@@ -55,22 +60,22 @@ async function gameWith(n) {
 }
 
 test('a stale socket disconnecting does not mark the player disconnected', async () => {
-  const { code, socks, ids } = await gameWith(2);
+  const { code, socks, ids, tokens } = await gameWith(2);
   const disconnects = record(socks[1], 'player:disconnected');
   // P0 reconnects on a new socket before the old one goes away (typical on mobile)
   const fresh = await connect();
-  const res = await call(fresh, 'game:rejoin', code, ids[0]);
+  const res = await call(fresh, 'game:rejoin', code, tokens[0]);
   assert.equal(res.success, true);
   assert.equal(res.phase, 'game');
   socks[0].disconnect();
   await sleep(config.GAME_GRACE_MS + 200);
   assert.equal(disconnects.length, 0);
-  const { gameState } = await call(fresh, 'game:rejoin', code, ids[0]);
+  const { gameState } = await call(fresh, 'game:rejoin', code, tokens[0]);
   assert.ok(gameState.players.every(p => p.connected && !p.spectator));
 });
 
 test('waiting lobby: disconnected player is kept during grace and can rejoin', async () => {
-  const { code, socks, ids } = await lobbyWith(2);
+  const { code, socks, ids, tokens } = await lobbyWith(2);
   const updates = record(socks[0], 'lobby:updated');
   socks[1].disconnect();
   await sleep(100);
@@ -79,7 +84,7 @@ test('waiting lobby: disconnected player is kept during grace and can rejoin', a
   assert.equal(last.players.find(p => p.id === ids[1]).connected, false);
 
   const back = await connect();
-  const res = await call(back, 'game:rejoin', code, ids[1]);
+  const res = await call(back, 'game:rejoin', code, tokens[1]);
   assert.equal(res.phase, 'lobby');
   assert.equal(res.players.find(p => p.id === ids[1]).connected, true);
   await sleep(config.LOBBY_GRACE_MS + 150);
@@ -112,21 +117,21 @@ test('disconnected current player gets a card auto-played', async () => {
 });
 
 test('grace expiry with 2 players ends the game; late rejoin sees the result', async () => {
-  const { code, socks, ids } = await gameWith(2);
+  const { code, socks, ids, tokens } = await gameWith(2);
   const won = nextEvent(socks[0], 'game:won', config.GAME_GRACE_MS + 1500);
   socks[1].disconnect();
   const result = await won;
   assert.equal(result.winnerId, ids[0]);
 
   const late = await connect();
-  const res = await call(late, 'game:rejoin', code, ids[1]);
+  const res = await call(late, 'game:rejoin', code, tokens[1]);
   assert.equal(res.success, false);
   assert.equal(res.ended, true);
   assert.equal(res.winner.winnerId, ids[0]);
 });
 
-test('leaving a running game removes the player at once; they can rejoin later', async () => {
-  const { code, socks, ids, state } = await gameWith(3);
+test('leaving a running game removes the player at once and ends their session', async () => {
+  const { code, socks, ids, tokens, state } = await gameWith(3);
   const currentIdx = ids.indexOf(state.currentPlayerId);
   const leaver = socks[currentIdx];
   const watcher = socks[(currentIdx + 1) % 3];
@@ -140,8 +145,27 @@ test('leaving a running game removes the player at once; they can rejoin later',
   assert.equal(s.players.find(p => p.id === ids[currentIdx]).spectator, true);
 
   const back = await connect();
-  const res = await call(back, 'game:rejoin', code, ids[currentIdx]);
+  assert.equal((await call(back, 'game:rejoin', code, tokens[currentIdx])).success, false);
+});
+
+test('a player removed after the grace period can rejoin and sits out the round', async () => {
+  const { code, socks, ids, tokens } = await gameWith(3);
+  const left = nextEvent(socks[0], 'player:left', config.GAME_GRACE_MS + 1500);
+  socks[2].disconnect();
+  assert.equal((await left).playerId, ids[2]);
+
+  const back = await connect();
+  const res = await call(back, 'game:rejoin', code, tokens[2]);
   assert.equal(res.success, true);
+  assert.equal(res.playerId, ids[2]);
   assert.deepEqual(res.hand, [], 'sits out until next round');
-  assert.equal(res.gameState.players.find(p => p.id === ids[currentIdx]).spectator, false);
+  assert.equal(res.gameState.players.find(p => p.id === ids[2]).spectator, false);
+});
+
+test('knowing a public playerId is not enough to rejoin as that player', async () => {
+  const { code, ids } = await gameWith(2);
+  const attacker = await connect();
+  const res = await call(attacker, 'game:rejoin', code, ids[1]);
+  assert.equal(res.success, false);
+  assert.deepEqual(await call(attacker, 'game:checkRejoin', { lobbyCode: code, token: ids[1] }), { canRejoin: false });
 });

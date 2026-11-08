@@ -11,7 +11,7 @@ export default function LobbyCreate({ onBack }) {
   const [mode, setMode] = useState('standard'); // standard | short | timed
   const [timedMinutes, setTimedMinutes] = useState(5);
   const [loading, setLoading] = useState(false);
-  const { emit, setPlayerId, setPlayerName: setGamePlayerName, setGameCode, setStatus, setPlayers, saveSession, setGameSettings } = useGame();
+  const { emit, setPlayerId, setSessionToken, setPlayerName: setGamePlayerName, setGameCode, setStatus, setPlayers, saveSession, setGameSettings } = useGame();
 
   const handleCreateLobby = (e) => {
     e.preventDefault();
@@ -25,6 +25,7 @@ export default function LobbyCreate({ onBack }) {
       if (response.success) {
         setGamePlayerName(playerName);
         setPlayerId(response.playerId);
+        setSessionToken(response.token);
         setPlayers(response.players);
         setGameCode(response.lobbyCode);
         setGameSettings(settings);

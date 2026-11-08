@@ -8,8 +8,8 @@ export default function LobbyBrowse({ onBack, onJoinWithCode }) {
   const [lobbies, setLobbies] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-  const [rejoinable, setRejoinable] = useState(null); // { lobbyCode, playerId, playerName } | null
-  const { emit, connected, setPlayerId, setPlayerName, setGameCode, acceptGameState, setStatus, setMyHand, saveSession, setPlayers, setGameSettings } = useGame();
+  const [rejoinable, setRejoinable] = useState(null); // stored session { gameCode, sessionToken, playerName } | null
+  const { emit, connected, setPlayerId, setSessionToken, setPlayerName, setGameCode, acceptGameState, setStatus, setMyHand, saveSession, setPlayers, setGameSettings } = useGame();
   const timeoutRef = useRef(null);
 
   const fetchLobbies = () => {
@@ -41,7 +41,7 @@ export default function LobbyBrowse({ onBack, onJoinWithCode }) {
       const raw = localStorage.getItem(SESSION_KEY);
       if (raw) {
         const session = JSON.parse(raw);
-        emit('game:checkRejoin', { lobbyCode: session.gameCode, playerId: session.playerId }, (res) => {
+        emit('game:checkRejoin', { lobbyCode: session.gameCode, token: session.sessionToken }, (res) => {
           if (res?.canRejoin) setRejoinable(session);
           else localStorage.removeItem(SESSION_KEY);
         });
@@ -56,10 +56,11 @@ export default function LobbyBrowse({ onBack, onJoinWithCode }) {
 
   const handleRejoin = () => {
     if (!rejoinable) return;
-    emit('game:rejoin', rejoinable.gameCode, rejoinable.playerId, (res) => {
+    emit('game:rejoin', rejoinable.gameCode, rejoinable.sessionToken, (res) => {
       if (res.success) {
         setPlayerName(rejoinable.playerName);
-        setPlayerId(rejoinable.playerId);
+        setPlayerId(res.playerId);
+        setSessionToken(rejoinable.sessionToken);
         setGameCode(rejoinable.gameCode);
         if (res.phase === 'lobby') {
           setPlayers(res.players || []);

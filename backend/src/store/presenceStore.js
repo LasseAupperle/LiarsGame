@@ -3,10 +3,25 @@
  * disconnect grace timers (SPEC §2.1).
  */
 
+const { randomUUID } = require('crypto');
+
 class PresenceStore {
   constructor() {
     this.sockets = {}; // playerId -> latest socket id
     this.timers = {};  // playerId -> grace-period timeout
+    this.tokens = {};  // secret token -> playerId (SPEC §2.1)
+  }
+
+  /** Create the secret rejoin token for a player. */
+  issueToken(playerId) {
+    const token = randomUUID();
+    this.tokens[token] = playerId;
+    return token;
+  }
+
+  /** @returns {string|null} playerId for a token */
+  resolveToken(token) {
+    return (typeof token === 'string' && this.tokens[token]) || null;
   }
 
   /** A socket now represents this player; cancels any pending grace timer. */
@@ -45,9 +60,13 @@ class PresenceStore {
     return !!this.timers[playerId];
   }
 
+  /** Player is gone for good (left on purpose / removed from a lobby): drop everything. */
   forget(playerId) {
     this.clearGrace(playerId);
     this.unbind(playerId);
+    for (const [token, id] of Object.entries(this.tokens)) {
+      if (id === playerId) delete this.tokens[token];
+    }
   }
 }
 

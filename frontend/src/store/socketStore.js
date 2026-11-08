@@ -30,19 +30,20 @@ function rejoinSession(socket) {
   if (game.status === 'won') return;
 
   const stored = readStoredSession();
-  const session = game.gameCode && game.playerId
-    ? { gameCode: game.gameCode, playerId: game.playerId, playerName: game.playerName }
+  const session = game.gameCode && game.sessionToken
+    ? { gameCode: game.gameCode, sessionToken: game.sessionToken, playerName: game.playerName }
     : stored;
-  if (!session?.gameCode || !session?.playerId) return;
+  if (!session?.gameCode || !session?.sessionToken) return;
 
   const hadGameInMemory = !!game.gameCode;
 
-  socket.emit('game:rejoin', session.gameCode, session.playerId, (res) => {
+  socket.emit('game:rejoin', session.gameCode, session.sessionToken, (res) => {
     const g = useGameStore.getState();
 
     if (res?.success) {
       g.setGameCode(session.gameCode);
-      g.setPlayerId(session.playerId);
+      g.setPlayerId(res.playerId);
+      g.setSessionToken(session.sessionToken);
       if (session.playerName) g.setPlayerName(session.playerName);
 
       if (res.phase === 'game') {
@@ -62,7 +63,7 @@ function rejoinSession(socket) {
     // Game finished while we were away: show the result
     if (res?.ended && res.winner) {
       g.setGameCode(session.gameCode);
-      g.setPlayerId(session.playerId);
+      if (session.playerId) g.setPlayerId(session.playerId);
       g.setWinner(res.winner);
       g.setStatus('won');
       return;

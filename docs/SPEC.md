@@ -95,8 +95,10 @@ round out and score nothing from it (decided 2026-11-08).
 - All state is in memory; a server restart ends every game.
 
 ### 2.1 Presence, disconnects & rejoin
-- A player's identity is their `playerId` (a secret UUID returned on create/join,
-  stored by the client). One player may have several sockets over time; only the
+- Each player has a public `playerId` (visible to everyone in lobby/game state) and a
+  secret `token` (UUID returned only to that player on create/join, stored by the
+  client). **Rejoining requires the token**; knowing someone's `playerId` is never
+  enough to act as them. One player may have several sockets over time; only the
   **most recent** socket counts. A disconnect of an older socket is ignored (mobile
   clients often reconnect before the old socket times out).
 - Each player has a `connected` flag, visible to everyone (lobby `players` and
@@ -115,11 +117,13 @@ round out and score nothing from it (decided 2026-11-08).
     player in order who holds cards.
   - If no remaining active player holds cards, the round ends without scoring and
     a new round starts.
-- **Rejoin** (`game:rejoin` with `lobbyCode, playerId`) works in both phases:
+- **Rejoin** (`game:rejoin` with `lobbyCode, token`) works in both phases:
   - waiting lobby → `phase: 'lobby'`, the lobby's players and settings;
   - running game → `phase: 'game'`, full `gameState`, own hand, settings, `endTime`.
   - A player removed after their grace period may rejoin a still-running game: they
     are dealt back in from the next round (like a mid-game join), keeping their score.
+    A player who left on purpose (`lobby:leave`) has given up their session and
+    cannot rejoin with it.
   - A tiebreak spectator stays a spectator after rejoining.
   - If the game finished within the last 10 minutes the response is
     `{ success: false, ended: true, winner }` so the client can show the result.
@@ -158,13 +162,13 @@ which receives `{ success: boolean, message?: string, ... }`.
 ### 4.1 Client → server
 | Event | Arguments | Success response |
 |---|---|---|
-| `lobby:create` | `playerName, settings{mode, timedMinutes}` | `lobbyCode, playerId, players` |
-| `lobby:join` | `lobbyCode, playerName` | `lobbyCode, playerId, players` or `joinedRunning: true` |
+| `lobby:create` | `playerName, settings{mode, timedMinutes}` | `lobbyCode, playerId, token, players, host` |
+| `lobby:join` | `lobbyCode, playerName` | `lobbyCode, playerId, token, players, host` or `joinedRunning: true` |
 | `lobby:leave` | — (in a running game: leave immediately, see §2.1) | — |
 | `lobby:start` | — (host only) | `gameState, settings, endTime` |
 | `lobby:list` | — | `lobbies[{code, playerCount, maxPlayers, status, roundNumber}]` |
-| `game:checkRejoin` | `{lobbyCode, playerId}` | `{canRejoin}` |
-| `game:rejoin` | `lobbyCode, playerId` | `phase:'lobby'`: `lobbyCode, players, host, settings` · `phase:'game'`: `gameState, hand, settings, endTime` · finished: `{success:false, ended:true, winner}` |
+| `game:checkRejoin` | `{lobbyCode, token}` | `{canRejoin}` |
+| `game:rejoin` | `lobbyCode, token` | `playerId` plus — `phase:'lobby'`: `lobbyCode, players, host, settings` · `phase:'game'`: `gameState, hand, settings, endTime` · finished: `{success:false, ended:true, winner}` |
 | `game:play` | `lobbyCode, cardIndices[]` | `gameState` |
 | `game:callLiar` | `lobbyCode` | `gameState` |
 
