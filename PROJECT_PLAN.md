@@ -75,8 +75,6 @@ frontend/public/         manifest.json, icons/, assets/cards, assets/sounds
 
 ### Gameplay / backend
 - [ ] Play-test tiebreak and timed-mode tiebreak end to end with real players.
-- [ ] Mid-game joiners currently receive the "+1 for others" on liar calls in the round they
-      sit out (SPEC §1.4 says "every other active player") — decide and spec.
 
 ### Infra
 - [ ] Add the `RENDER_DEPLOY_HOOK_URL` secret in GitHub (workflow is ready, see DEPLOYMENT.md)
@@ -102,6 +100,9 @@ frontend/public/         manifest.json, icons/, assets/cards, assets/sounds
 - **Toasts** replace every `alert()` (`uiStore.showToast` / `toast()`, `components/Shared/Toasts.jsx`);
   `game:autoPlayed` and `player:left` now show a toast. New feature styles live in
   `frontend/src/features.css`, separate from `AppStyles.css`.
+- **Round participants** (SPEC §1.2): only players dealt into a round score from it — mid-game
+  joiners and restored players no longer get "+1 for others" while sitting out. Turn order now
+  uses an unbiased Fisher-Yates shuffle (was `sort(() => Math.random() - 0.5)`).
 
 ### 2026-11-08
 - Added `docs/SPEC.md` (source of truth) and `CLAUDE.md` (spec-first workflow).

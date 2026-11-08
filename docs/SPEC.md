@@ -19,8 +19,14 @@ Status markers: **[OPEN]** = decision pending, not yet specified.
 ### 1.2 Round setup
 1. A fresh deck is shuffled.
 2. The **table card** is chosen at random from Ace / King / Queen.
-3. Every *active* player (see 1.7) is dealt 5 cards.
-4. Turn order is randomised among active players; the first player in it starts.
+3. Every eligible player is dealt 5 cards: all non-spectators, or only the tied
+   leaders during a tiebreak (see 1.7).
+4. Turn order is randomised among the dealt players; the first player in it starts.
+
+The players dealt in at round start are that round's **participants**. Only
+participants who haven't been removed (§2.1) count as *active players* for that
+round's scoring. Players who join, rejoin after removal, or are spectating sit the
+round out and score nothing from it (decided 2026-11-08).
 
 ### 1.3 Turn
 - On their turn the current player must do exactly one of:

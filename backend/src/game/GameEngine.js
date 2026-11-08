@@ -8,6 +8,16 @@ const { isTruthful, calculateScoreChange, shouldEnterTiebreak, getActivePlayers,
 const logger = require('../utils/logger');
 const { cardIndices: isValidCardIndices } = require('../utils/validate');
 
+/** Unbiased Fisher-Yates shuffle (returns a new array). */
+function shuffle(items) {
+  const a = [...items];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
 class GameEngine {
   constructor(players, settings = {}) {
     this.players = players; // Array of Player objects
@@ -17,6 +27,7 @@ class GameEngine {
     this.turnOrder = [];
     this.playHistory = []; // { playerId, playerName, cardsPlayed: N, claim: "3 Kings" }
     this.roundPlays = {}; // { playerId: { cardsPlayed[], truthful: bool } }
+    this.participants = new Set(); // ids dealt into the current round (SPEC §1.2)
     this.deck = null;
     this.settings = {
       mode: settings.mode || 'standard', // standard | short | timed
@@ -53,7 +64,8 @@ class GameEngine {
     });
 
     // Randomize turn order for active players
-    this.turnOrder = activePlayers.map(p => p.id).sort(() => Math.random() - 0.5);
+    this.turnOrder = shuffle(activePlayers.map(p => p.id));
+    this.participants = new Set(this.turnOrder);
     this.currentPlayerIndex = 0;
 
     this.roundPlays = {};
@@ -171,7 +183,7 @@ class GameEngine {
     applyScore(accusedPlayer, scoreChange.liarScore);
     applyScore(caller, scoreChange.callerScore);
     this.players.forEach(p => {
-      if (p.id !== accusedId && p.id !== callerId && !p.spectator) {
+      if (p.id !== accusedId && p.id !== callerId && this.isActiveInRound(p)) {
         applyScore(p, scoreChange.othersScore);
       }
     });
@@ -202,7 +214,7 @@ class GameEngine {
    */
   resolveNoLiarCall() {
     const scoreDeltas = {};
-    this.players.filter(p => !p.spectator).forEach(p => {
+    this.players.filter(p => this.isActiveInRound(p)).forEach(p => {
       p.updateScore(1);
       scoreDeltas[p.id] = 1;
     });
@@ -260,7 +272,12 @@ class GameEngine {
 
   /** True when no active player holds cards (round over without a liar call). */
   allHandsEmpty() {
-    return this.players.filter(p => !p.spectator).every(p => p.hand.length === 0);
+    return this.players.filter(p => this.isActiveInRound(p)).every(p => p.hand.length === 0);
+  }
+
+  /** Dealt into this round and not removed/spectating since (SPEC §1.2). */
+  isActiveInRound(player) {
+    return this.participants.has(player.id) && !player.spectator && !player.left;
   }
 
   /**

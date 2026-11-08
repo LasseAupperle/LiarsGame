@@ -169,3 +169,25 @@ test('connected flag is part of the public player state', () => {
   players[1].connected = false;
   assert.deepEqual(engine.getGameState().players.map(p => p.connected), [true, false]);
 });
+
+test('players sitting out a round score nothing from it (SPEC §1.2)', () => {
+  const { engine, players } = makeEngine([[2], [1], [1]]);
+  const joiner = new Player('late', 'Late');
+  engine.players.push(joiner); // joined mid-round: not a participant
+  engine.playTurn('p0', [0]);
+  engine.nextTurn();
+  const { result } = engine.callLiar('p1');
+  assert.equal(result.scoreDeltas.late, undefined);
+  assert.equal(joiner.mainScore, 0);
+  assert.equal(players[2].mainScore, 1, 'participating bystander still gets +1');
+
+  engine.startRound();
+  assert.ok(engine.participants.has('late'), 'dealt in from the next round');
+  assert.equal(joiner.hand.length, 5);
+});
+
+test('no-liar round only pays participants', () => {
+  const { engine } = makeEngine([[1], [1]]);
+  engine.players.push(new Player('late', 'Late'));
+  assert.deepEqual(Object.keys(engine.resolveNoLiarCall()).sort(), ['p0', 'p1']);
+});
