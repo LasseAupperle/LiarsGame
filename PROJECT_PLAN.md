@@ -207,3 +207,7 @@ LiarsGame/
   - Duplicate names in a lobby are rejected (case-insensitive).
   - `scoreDeltas` now lists every changed player with the real (clamped) change.
   - In-game rules modal text updated to match.
+- **Tests & CI:** `cd backend && npm test` (node:test, no extra framework) — unit tests for
+  rules/Deck/Player/GameEngine plus Socket.IO integration tests against a real server.
+  `server.js` split into `app.js` (`createApp()`) so tests can start it on a random port.
+  GitHub Actions runs backend tests + frontend build on every push/PR.

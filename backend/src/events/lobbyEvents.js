@@ -232,6 +232,7 @@ module.exports = (io) => {
               emitPrivateHands(io, lobbyCode, engine);
             }
           }, startResult.settings.timedMinutes * 60 * 1000);
+          gameTimers[lobbyCode].unref?.();
         }
 
         io.to(lobbyCode).emit('game:started', { lobbyCode, gameState, settings: startResult.settings, endTime });
@@ -353,6 +354,8 @@ module.exports = (io) => {
               lobbyStore.deleteLobby(lobbyCode);
             }
           }, 120000);
+          // Don't keep the process alive just for this timer (the HTTP server does that)
+          disconnectTimers[playerId].unref?.();
         } else {
           // In lobby — remove immediately
           lobbyStore.leaveLobby(lobbyCode, playerId);
